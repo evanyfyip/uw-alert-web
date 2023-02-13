@@ -10,7 +10,7 @@
 ## Questions of Interest
 - What area around UW campus is most commonly listed in alerts?
 - What time of day do alerts occur more often?
-- What is the most common type of indicent?
+- What is the most common type of incident?
 - Have any trends arisen across time in the UW alert system?
 
 ## Goals for the Project
