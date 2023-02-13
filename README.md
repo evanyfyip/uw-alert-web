@@ -18,4 +18,10 @@
 - Parse real-time information from the UW alerts system and display the alert's origin.
 - Inform the user of alert trends over time and location
 
-# Data Sources
+## Data Sources
+- Seattle GeoData
+  - GIS database for Seattle streets that allows for map visualizations
+  - Link: https://data-seattlecitygis.opendata.arcgis.com/datasets/SeattleCityGIS::seattle-streets-3/explore?location=47.609360%2C-122.325916%2C14.88
+- UW Alerts Blog
+  - Official blogpost maintained by the University of Washington dedicated to reporting incidents may affect students
+  - Link: https://emergency.uw.edu/?_gl=1*ztz313*_ga*MzIwNzY5MTg2LjE2NjU4NzU5NjU.*_ga_3T65WK0BM8*MTY3NjMyNTM5Ny4yMS4wLjE2NzYzMjU0MDEuMC4wLjA.
