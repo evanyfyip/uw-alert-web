@@ -11,9 +11,7 @@ The Front End manager implements the front end and back end connection by using 
 The Front End manager requires a figure produced by the plot manager in order to return a JSON variable that encodes the visualization. 
 The Front End manager returns a render template that communicates with the HTML file in the current directory to display the JSON dump as a visualzation on a webpage. 
 
-**Visualization Manager:**
-
-The visualization manager implements the creation of a plotly plot using data scraped from the UW Alerts Webpage. 
+**Visualization Manager:** The visualization manager implements the creation of a plotly plot using data scraped from the UW Alerts Webpage. 
 
 The visualization manager requires numerous python packages, ranging from pandas, geopandas, plotly, and matplotlib. It also requires a csv file which indicates incidents of crime and the area.
 
