@@ -7,7 +7,7 @@ import time
 import re
 import pandas as pd
 import openai
-from transformers import GPT2Tokenizer
+# from transformers import GPT2Tokenizer
 
 def prompt_gpt(lines, alert_start, alert_end):
     """
@@ -38,19 +38,19 @@ def prompt_gpt(lines, alert_start, alert_end):
     alert_chunk = '\n'.join(lines[alert_start:alert_end])
     gpt_prompt = ''.join([gpt_task, alert_chunk])
     gpt_prompt += '\n"""'
-    tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
-    n_tokens = len(tokenizer(gpt_prompt)['input_ids'])
+    # tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+    # n_tokens = len(tokenizer(gpt_prompt)['input_ids'])
     response = openai.Completion.create(
         engine="text-davinci-003",
         prompt=gpt_prompt,
         temperature=0,
-        max_tokens=4097-n_tokens)
+        max_tokens=3200)
     gpt_lines = io.StringIO(response['choices'][0]['text']).readlines()
     for i, line in enumerate(gpt_lines):
         if line.startswith('Date'):
             start_line = i
     gpt_output = ''.join(gpt_lines[start_line:])
-    time.sleep(40)
+    time.sleep(10)
     return pd.read_table(io.StringIO(gpt_output), sep='|')
 
 def parse_txt_data(filepath):
@@ -93,7 +93,7 @@ def parse_txt_data(filepath):
     return clean_data
 
 if __name__ == "__main__":
-    OPENAI_API_KEY =  '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'
+    OPENAI_API_KEY =  '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'
     FILEPATH = './data/UW_Alerts_2018_2022.txt'
     OUT_FILEPATH = './data/uw_alerts_clean.csv'
     openai.api_key = OPENAI_API_KEY
