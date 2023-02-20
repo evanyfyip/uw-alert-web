@@ -4,22 +4,22 @@ The current alert system informs users on a mailing list via email. We intend to
 
 # User Profiles
 ## User 1: UW Student
-Wants: Check incidents around their commute to class and back.
-Interaction Methods: Use application
-Needs: Current location, incident locations
-Skills: Know how to navigate a website interface.
+- Wants: Check incidents around their commute to class and back.
+- Interaction Methods: Use application
+- Needs: Current location, incident locations
+- Skills: Know how to navigate a website interface.
 
 ## User 2: U-District Resident
-Wants: Check incidents around their commute to places in U-District.
-Interaction Methods: Use application
-Needs: Current location, incident locations
-Skills: Know how to navigate a website interface.
+- Wants: Check incidents around their commute to places in U-District.
+- Interaction Methods: Use application
+- Needs: Current location, incident locations
+- Skills: Know how to navigate a website interface.
 
 ## User 3: UW Alerts Staff
-Wants: Check that alerts display correct location and information.
-Interaction Methods: Admin interface
-Needs: Admin previliges and interface
-Skills: Know how to send alert through UW Alert System, generally knows U-District location
+- Wants: Check that alerts display correct location and information.
+- Interaction Methods: Admin interface
+- Needs: Admin previliges and interface
+- Skills: Know how to send alert through UW Alert System, generally knows U-District location
 
 # Data Sources
 ## [Seattle GeoData](https://data-seattlecitygis.opendata.arcgis.com/datasets/SeattleCityGIS::seattle-streets-3/explore?location=47.609360%2C-122.325916%2C14.88)
