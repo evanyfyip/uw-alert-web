@@ -25,3 +25,5 @@ The text manager requires
 
 The text manager returns the csv file with crime incidents with severity, time, location, and radius. 
 
+## Preliminary Plan
+
