@@ -26,4 +26,7 @@ The text manager requires
 The text manager returns the csv file with crime incidents with severity, time, location, and radius. 
 
 ## Preliminary Plan
+1. Develop map interface.
+2. Clean UW Alerts text data to obtain key incident information.
+3. Develop method to update live map when a new incident is reported on UW Alerts. 
 
