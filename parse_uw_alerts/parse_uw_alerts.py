@@ -54,7 +54,7 @@ def prompt_gpt(lines, alert_start, alert_end):
     time.sleep(10)
     return gpt_table
 
-def parse_txt_data(filepath):
+def parse_txt_data(filepath, out_filepath):
     """
     Arguments:
         filepath - path to .txt file containing historial UW Alerts blogposts.
@@ -76,11 +76,11 @@ def parse_txt_data(filepath):
         alert_chunk_start = None
         alert_chunk_end = None
         for i, line in enumerate(lines[452:]):
-            clean_data = pd.read_csv('./data/uw_alerts_clean.csv', index_col=False)
+            clean_data = pd.read_csv(out_filepath, index_col=False)
             if i == len(lines) - 1:
                 table = prompt_gpt(lines, alert_chunk_start, i)
                 clean_data = pd.concat([clean_data, table], ignore_index=True)
-                clean_data.to_csv('./data/uw_alerts_clean.csv', index=False)
+                clean_data.to_csv(out_filepath, index=False)
             date_check = re.search(r'^[A-z]+\s\d{1,2},\s\d{4}\n$', line)
             if date_check:
                 if alert_chunk_start is None:
@@ -91,7 +91,7 @@ def parse_txt_data(filepath):
                         lines, alert_chunk_start, alert_chunk_end)
                     clean_data = pd.concat(
                         [clean_data, table], ignore_index=True)
-                    clean_data.to_csv('./data/uw_alerts_clean.csv', index=False)
+                    clean_data.to_csv(out_filepath, index=False)
                     alert_chunk_start = i
             
     return clean_data
@@ -99,6 +99,6 @@ def parse_txt_data(filepath):
 if __name__ == "__main__":
     OPENAI_API_KEY =  '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'
     FILEPATH = './data/UW_Alerts_2018_2022.txt'
-    OUT_FILEPATH = './data/uw_alerts_clean.csv'
+    OUT_FILEPATH = './data/uw_alerts_gpt.csv'
     openai.api_key = OPENAI_API_KEY
     parse_txt_data(FILEPATH)
