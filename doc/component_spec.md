@@ -30,3 +30,7 @@ The text manager returns the csv file with crime incidents with severity, time, 
 2. Clean UW Alerts text data to obtain key incident information.
 3. Develop method to update live map when a new incident is reported on UW Alerts. 
 
+## Interaction Diagram
+![image](https://user-images.githubusercontent.com/50302514/220487566-19c3aff5-2112-4bf2-9f19-ceeffd6c7987.png)
+
+
