@@ -1,10 +1,11 @@
 from bs4 import BeautifulSoup
 import requests
-URL = "https://emergency.uw.edu/"
-page = requests.get(URL)
-soup = BeautifulSoup(page.content,"html.parser")
-mainContent = soup.find(id="main_content")
-print(mainContent.prettify())
 
-for element in mainContent.title.next_elements:
-    print(repr(element))
+#scrapes UW alerts for all the text for each alert. 
+def scrape_uw_alerts():
+    URL = "https://emergency.uw.edu/"
+    page = requests.get(URL)
+    soup = BeautifulSoup(page.content,"html.parser")
+    mainContent = soup.find(id="main_content")
+    p_tags = mainContent.find_all('p')
+    return p_tags
