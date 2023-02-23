@@ -8,11 +8,7 @@ import re
 import pandas as pd
 import openai
 from transformers import GPT2Tokenizer
-<<<<<<< HEAD
 from scraper import scrape_uw_alerts
-=======
-from ..app.scraper import scrape_uw_alerts
->>>>>>> main
 
 def prompt_gpt(lines, alert_start, alert_end):
     """
@@ -111,11 +107,5 @@ if __name__ == "__main__":
     FILEPATH = './data/UW_Alerts_2018_2022.txt'
     OUT_FILEPATH = './data/uw_alerts_gpt.csv'
     openai.api_key = OPENAI_API_KEY
-<<<<<<< HEAD
     # parse_txt_data(FILEPATH, OUT_FILEPATH)
     scarped_data = scrape_uw_alerts()
-=======
-    # parse_txt_data(FILEPATH)
-    scraped_data = scrape_uw_alerts()
-    print(scraped_data)
->>>>>>> main
