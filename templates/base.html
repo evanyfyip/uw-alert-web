@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+<body>
+  <h1>NEW CITIZEN APP</h1>
+  <iframe id="map-frame" width="80%" height="600px" frameborder="0">
+  </iframe>
+  <script>
+    var mapHtml = '{{ map_html | tojson }}';
+    var mapFrame = document.getElementById('map-frame');
+    var mapFrameDoc = mapFrame.contentDocument || mapFrame.contentWindow.document;
+    mapFrameDoc.open();
+    mapFrameDoc.write(mapHtml);
+    mapFrameDoc.close();
+  </script>
+</body>
+</html>
