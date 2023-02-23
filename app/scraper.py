@@ -2,7 +2,8 @@ from bs4 import BeautifulSoup
 import requests
 import re
 
-def scrape_uw_alerts(prev_alert_list):
+def scrape_uw_alerts():
+    prev_alert_list = ['no alerts']
     newest_alert_list = []
     date_counter = 0
     same_alert_flag = True
@@ -18,9 +19,10 @@ def scrape_uw_alerts(prev_alert_list):
             date_counter+=1
         if date_counter<2:
             newest_alert_list.append(p)
-
+    print(len(newest_alert_list))
+    print(len(prev_alert_list))
     if(len(newest_alert_list) != len(prev_alert_list)):
-        same_alert_flag == False
+        same_alert_flag = False
     else:
         for i in range(len(newest_alert_list)):
             if newest_alert_list[i].text != prev_alert_list[i].text:
@@ -31,5 +33,3 @@ def scrape_uw_alerts(prev_alert_list):
     if same_alert_flag == False:
         return newest_alert_list
     return None
-
-   
