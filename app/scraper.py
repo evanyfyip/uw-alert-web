@@ -19,8 +19,6 @@ def scrape_uw_alerts():
             date_counter+=1
         if date_counter<2:
             newest_alert_list.append(p)
-    print(len(newest_alert_list))
-    print(len(prev_alert_list))
     if(len(newest_alert_list) != len(prev_alert_list)):
         same_alert_flag = False
     else:
