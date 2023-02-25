@@ -1,16 +1,47 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-<body>
-  <h1>NEW CITIZEN APP</h1>
-  <iframe id="map-frame" width="80%" height="600px" frameborder="0">
-  </iframe>
-  <script>
-    var mapHtml = '{{ map_html | tojson }}';
-    var mapFrame = document.getElementById('map-frame');
-    var mapFrameDoc = mapFrame.contentDocument || mapFrame.contentWindow.document;
-    mapFrameDoc.open();
-    mapFrameDoc.write(mapHtml);
-    mapFrameDoc.close();
-  </script>
-</body>
+  <head>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="{{ url_for('static', filename='main.css') }}"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <nav>
+        <ul>
+          <li><a href="#">HOME</a></li>
+          <li><a href="#">ABOUT</a></li>
+          <li><a href="#">CONTACT</a></li>
+        </ul>
+      </nav>
+      <div id="elementContainer">
+        <div id="formcontainer">
+          <form id="formtag">
+            <label for="text-input" class="text-label">Test New Data for Map:</label>
+            <textarea id="test-input" name="text-input" placeholder="Enter in a UW Alert" ></textarea>
+            <button type="submit" id="submitbutton">Beam Me Up!</button>
+          </form>
+        </div>
+        <div id="plotcontainer">
+          <iframe
+            id="map-frame"
+            width="80%"
+            height="600px"
+            frameborder="0"
+          ></iframe>
+        </div>
+      </div>
+      <script>
+        var mapHtml = {{ map_html | safe | tojson}};
+        console.log('mapHtml:', mapHtml)
+        var mapFrame = document.getElementById('map-frame');
+        var mapFrameDoc = mapFrame.contentDocument || mapFrame.contentWindow.document;
+        mapFrameDoc.open();
+        mapFrameDoc.write(mapHtml);
+        mapFrameDoc.close();
+      </script>
+    </div>
+  </body>
 </html>
