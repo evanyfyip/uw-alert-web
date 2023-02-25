@@ -1,10 +1,12 @@
 """
-Function to parse UW Alerts text data and extract 
+Functions to parse UW Alerts text data and extract 
 key incident information in a tabular format.
 """
 import io
 import time
+import string
 import re
+from datetime import datetime
 import pandas as pd
 import openai
 from transformers import GPT2Tokenizer
@@ -108,12 +110,87 @@ def parse_txt_data(filepath, out_filepath):
                     alert_chunk_start = i
     return clean_data
 
+def clean_date(date_string):
+    """
+    Arguments:
+        date_string - string containing date.
+    Returns:
+        a tuple (year, month, day).
+    Exceptions:
+        date_string must be a string.
+        ValueError will be thrown otherwise.
+    """
+    if not isinstance(date_string, str):
+        raise ValueError("date_string must be a string")
+    
+    date_abbr = {'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 
+                 'may': 5, 'jun': 6, 'jul': 7, 'aug': 8, 
+                 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12}
+    if re.search('\d{2}/\d{2}/\d{4}', date_string):
+        date_object = datetime.strptime(date_string, '%m/%d/%Y')
+        return (date_object.year, date_object.month, date_object.day)
+    else:
+        for month, month_number in date_abbr.items():
+            if re.search(month, date_string, re.IGNORECASE):
+                month_num = month_number
+                break
+        year = re.search('\d{4}$', date_string)
+        if year:
+            year = int(year.group(0))
+        else:
+            year = None
+        day = re.sub('\d{4}$|[A-z]', '', date_string)
+        day = ''.join(['' if c in string.punctuation else c for c in day])
+        day = int(day.strip())
+        return (year, month_num, day)
+
+def clean_gpt_output(gpt_output='./data/uw_alerts_gpt.csv'):
+    """
+    Arguments:
+        gpt_output - either a filepath to csv file or Pandas DataFrame.
+    Returns:
+        A Pandas DataFrame with cleaned columns.
+    Exceptions:
+        gpt_output must be a filepath with .csv extension or
+        a Pandas DataFrame.
+        ValueError will be thrown otherwise.
+    """
+    if not isinstance(gpt_output, str):
+       if not isinstance(gpt_output, pd.DataFrame):
+           raise ValueError(
+               "gpt_output must be a filepath or Pandas DataFrame")
+       else:
+           gpt_data = gpt_output.copy()
+    else:
+        if not re.search('.csv$', gpt_output):
+            raise ValueError("gpt_output must be a .csv filepath")
+        else:
+            gpt_data = pd.read_csv(gpt_output, index_col=False)
+        
+    ymd = [clean_date(date) for date in gpt_data['Date'].values]
+    gpt_data['Year'] = [date[0] for date in ymd]
+    gpt_data['Month'] = [date[1] for date in ymd]
+    gpt_data['Day'] = [date[2] for date in ymd]
+    gpt_data[['Year']] = gpt_data[['Year']].fillna(method='ffill')
+    gpt_data['Date'] = pd.to_datetime(dict(year=gpt_data.Year,
+                                           month=gpt_data.Month,
+                                           day=gpt_data.Day))
+    gpt_data['Date'] = gpt_data['Date'].dt.date
+    gpt_data['Report Time'] = gpt_data['Report Time'].str.upper()
+    gpt_data['Incident Time'] = gpt_data['Incident Time'].str.upper()
+    gpt_data['Report Time'] = gpt_data['Report Time'].str.replace(
+        '\.|\s+', '', regex=True)
+    gpt_data['Incident Time'] = gpt_data['Incident Time'].str.replace(
+        '\.|\s+', '', regex=True)
+    print(gpt_data['Report Time'].values)
+     
 if __name__ == "__main__":
     OPENAI_API_KEY =  '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'
     FILEPATH = './data/UW_Alerts_2018_2022.txt'
     OUT_FILEPATH = './data/uw_alerts_gpt.csv'
     openai.api_key = OPENAI_API_KEY
     # parse_txt_data(FILEPATH, OUT_FILEPATH)
-    scraped_data = scrape_uw_alerts(['no alerts'])
-    for content in scraped_data:
-        print(content.text)
+    # scraped_data = scrape_uw_alerts()
+    # for content in scraped_data:
+    #     print(content.text)
+    clean_gpt_output()
