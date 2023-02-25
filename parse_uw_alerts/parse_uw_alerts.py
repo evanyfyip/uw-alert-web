@@ -8,7 +8,8 @@ import re
 import pandas as pd
 import openai
 from transformers import GPT2Tokenizer
-from scraper import scrape_uw_alerts
+import googlemaps
+# from scraper import scrape_uw_alerts
 
 def prompt_gpt(lines):
     """
@@ -26,6 +27,7 @@ def prompt_gpt(lines):
         raise ValueError("lines must be a list")
     if len(lines) < 1:
         raise ValueError("lines must be at least length 1")
+
     gpt_task = ('Extract a markdown table with the columns Date, Report Time,'
                 ' Incident Time, Incident Address, Incident Category, and'
                 ' Incident Summary from the following alert message.'
@@ -91,7 +93,6 @@ def parse_txt_data(filepath, out_filepath):
                 table = prompt_gpt(lines[(alert_chunk_start+start):(i+start)])
                 clean_data = pd.read_csv(out_filepath, index_col=False)
                 clean_data = pd.concat([clean_data, table], ignore_index=True)
-                # print(list(clean_data.columns))
                 clean_data.to_csv(out_filepath, index=False)
             date_check = re.match(r'^[A-z]+\s\d{1,2},\s\d{4}\n$', line)
             if date_check:
@@ -105,12 +106,12 @@ def parse_txt_data(filepath, out_filepath):
                     clean_data = pd.read_csv(out_filepath, index_col=False)
                     clean_data = pd.concat(
                         [clean_data, table], ignore_index=True)
-                    # print(list(clean_data.columns))
                     clean_data.to_csv(out_filepath, index=False)
                     alert_chunk_start = i
     return clean_data
 
-def clean_gpt_output(gpt_output='./data/uw_alerts_gpt.csv'):
+def clean_gpt_output(gpt_output='./data/uw_alerts_gpt.csv',
+                     gmaps_client=None):
     """
     Arguments:
         gpt_output - either a filepath to csv file or Pandas DataFrame.
@@ -140,15 +141,27 @@ def clean_gpt_output(gpt_output='./data/uw_alerts_gpt.csv'):
         r'\.', '', regex=True)
     gpt_data['Incident Time'] = gpt_data['Incident Time'].str.replace(
         r'\.', '', regex=True)
-    print(gpt_data['Report Time'].values)
+    gpt_data[['Incident Address']] = gpt_data[['Incident Address']].fillna('')
+    geocode_results = [gmaps_client.geocode(
+        ''.join([address, ', University District, Seattle WA'])
+        ) for address in gpt_data['Incident Address']]
+    gpt_data['Google Address'] = [
+        result[0]['formatted_address'] for result in geocode_results]
+    gpt_data['geometry'] = [
+        result[0]['geometry'] for result in geocode_results]
+    return gpt_data
 
 if __name__ == "__main__":
     OPENAI_API_KEY =  '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'
+    GOOGLE_MAPS_API_KEY = 'AIzaSyCJ3lSOMFCV5NHsBAcyzM6wSP3reSu0qy4'
     FILEPATH = './data/UW_Alerts_2018_2022.txt'
     OUT_FILEPATH = './data/uw_alerts_gpt.csv'
+    CLEAN_FILEPATH = './data/uw_alerts_clean.csv'
     openai.api_key = OPENAI_API_KEY
+    gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
     # parse_txt_data(FILEPATH, OUT_FILEPATH)
     # scraped_data = scrape_uw_alerts()
     # for content in scraped_data:
     #     print(content.text)
-    clean_gpt_output()
+    gpt_clean = clean_gpt_output(gmaps_client=gmaps)
+    gpt_clean.to_csv(CLEAN_FILEPATH, index=False)
