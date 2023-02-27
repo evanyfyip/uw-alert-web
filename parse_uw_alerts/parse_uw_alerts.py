@@ -28,11 +28,10 @@ def prompt_gpt(lines):
     if len(lines) < 1:
         raise ValueError("lines must be at least length 1")
 
-    gpt_task = ('Extract a markdown table with the columns Date, Report Time,'
-                ' Incident Time, Incident Address, Incident Category, and'
-                ' Incident Summary from the following alert message.'
-                ' Make sure the Date is in mm/dd/yyy format and times are'
-                ' in 12-hour format.'
+    gpt_task = ('Extract a markdown table with the columns Date (mm/dd/yyyy),'
+                ' Report Time (hh:mm AM/PM), Incident Time (hh:mm AM/PM),'
+                ' Nearest Intersection to Incident, Incident Category, and'
+                ' Incident Summary from the following alert message.\n'
                 'Text: """')
     alert_chunk = '\n'.join(lines)
     gpt_prompt = '\n'.join([gpt_task, alert_chunk])
@@ -48,11 +47,13 @@ def prompt_gpt(lines):
     gpt_table = pd.read_table(
         io.StringIO(response['choices'][0]['text']), sep='|', \
             skipinitialspace=True, header=0, index_col=False)
-    gpt_table.rename(columns=lambda x: x.strip(), inplace=True)
-    gpt_table = gpt_table.iloc[1:]
+    gpt_table.drop(list(
+        gpt_table.filter(regex = 'Unnamed')), axis = 1, inplace = True)
     column_names = ['Date', 'Report Time', 'Incident Time',
-                    'Incident Address', 'Incident Category',
-                    'Incident Summary']
+                    'Nearest Intersection to Incident', 
+                    'Incident Category', 'Incident Summary']
+    gpt_table.columns = column_names
+    gpt_table = gpt_table.iloc[1:]
     gpt_table = gpt_table.loc[:, column_names]
     for column in column_names:
         gpt_table[column] = gpt_table[column].astype(str).str.strip()
@@ -86,7 +87,7 @@ def parse_txt_data(filepath, out_filepath):
         lines = file.readlines()
         alert_chunk_start = None
         alert_chunk_end = None
-        start = 1199
+        start = 326
         for i, line in enumerate(lines[start:]):
             if i + start == len(lines) - 1:
                 print((alert_chunk_start+start, i+start))
@@ -138,13 +139,14 @@ def clean_gpt_output(gpt_output='./data/uw_alerts_gpt.csv',
     gpt_data['Report Time'] = gpt_data['Report Time'].str.upper()
     gpt_data['Incident Time'] = gpt_data['Incident Time'].str.upper()
     gpt_data['Report Time'] = gpt_data['Report Time'].str.replace(
-        r'\.', '', regex=True)
+        r'\.|-|UNKNOWN', '', regex=True)
     gpt_data['Incident Time'] = gpt_data['Incident Time'].str.replace(
-        r'\.', '', regex=True)
-    gpt_data[['Incident Address']] = gpt_data[['Incident Address']].fillna('')
+        r'\.|-|UNKNOWN', '', regex=True)
+    gpt_data[['Nearest Intersection to Incident']] = gpt_data[
+        ['Nearest Intersection to Incident']].fillna('')
     geocode_results = [gmaps_client.geocode(
         ''.join([address, ', University District, Seattle WA'])
-        ) for address in gpt_data['Incident Address']]
+        ) for address in gpt_data['Nearest Intersection to Incident']]
     gpt_data['Google Address'] = [
         result[0]['formatted_address'] for result in geocode_results]
     gpt_data['geometry'] = [
@@ -152,7 +154,7 @@ def clean_gpt_output(gpt_output='./data/uw_alerts_gpt.csv',
     return gpt_data
 
 if __name__ == "__main__":
-    OPENAI_API_KEY =  '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'
+    OPENAI_API_KEY =  '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'
     GOOGLE_MAPS_API_KEY = 'AIzaSyCJ3lSOMFCV5NHsBAcyzM6wSP3reSu0qy4'
     FILEPATH = './data/UW_Alerts_2018_2022.txt'
     OUT_FILEPATH = './data/uw_alerts_gpt.csv'
