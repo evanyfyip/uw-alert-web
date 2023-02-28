@@ -122,5 +122,15 @@ def get_folium_map():
         line_color='red'
     ).add_to(map)
 
+    ## TODO: James will work on displaying markers
+    folium.CircleMarker(
+        [47.663082, -122.310859],
+        popup="<b>Police looking for man with handgun on 47th St. near 16th Ave. Secure doors, avoid area if possible.</b>"
+    ).add_to(map)
+    folium.CircleMarker(
+        [47.658363, -122.317714],
+        popup="<b>Shooting reported near 42nd Ave NE/Roosevelt at 12:46pm. Shooter fled in white vehicle.</b>",
+    ).add_to(map)
+
     m_html = map.get_root().render()
     return m_html
