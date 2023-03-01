@@ -127,7 +127,7 @@ def get_folium_map(alert_coords, alert_messages):
         raise ValueError("alert_messages must only contain strings")
 
     # Display the U-District area
-    gdf = gpd.read_file('../data/SeattleGISData/udistrict_streets.geojson')
+    gdf = gpd.read_file('./data/SeattleGISData/udistrict_streets.geojson')
     # pylint: disable=line-too-long
     mapbox_api_key = 'pk.eyJ1IjoiZXZhbnlpcCIsImEiOiJjbGRxYnc3dXEwNWxxM25vNjRocHlsOHFyIn0.0H4RiKd8X94CeoXwEd4TgQ'
     tileset_id_str = "dark-v11"
