@@ -8,7 +8,8 @@ from parse_uw_alerts.parse_uw_alerts import (
     generate_ids,
     parse_txt_data,
     clean_gpt_output,
-    generate_csv
+    generate_csv,
+    scrape_uw_alerts
 )
 
 class TestParseUWAlertsPromptGPT(unittest.TestCase):
@@ -36,33 +37,40 @@ class TestParseUWAlertsGenerateIds(unittest.TestCase):
     def test_gen_id_filepath(self):
         """Test for string filepath"""
         with self.assertRaises(ValueError):
-            generate_ids(out_filepath=1,
+            generate_ids(uw_alert_file=1,
                          gpt_table=pd.DataFrame({'Test': [1]}),
                          alert_type='Update')
     def test_gen_id_filepath_csv(self):
         """Test for .csv filepath"""
         with self.assertRaises(ValueError):
-            generate_ids(out_filepath='./data/output.txt',
+            generate_ids(uw_alert_file='./data/output.txt',
                          gpt_table=pd.DataFrame({'Test': [1]}),
                          alert_type='Update')
     def test_gen_id_dataframe(self):
         """Test for Pandas DataFrame input"""
         with self.assertRaises(ValueError):
-            generate_ids(out_filepath='./data/uw_alerts_gpt.csv',
+            generate_ids(uw_alert_file='./data/uw_alerts_gpt.csv',
                          gpt_table=[1],
                          alert_type='Update')
     def test_gen_id_dataframe_len(self):
         """Test for DataFrame of at least 1 row"""
         with self.assertRaises(ValueError):
-            generate_ids(out_filepath='./data/uw_alerts_gpt.csv',
+            generate_ids(uw_alert_file='./data/uw_alerts_gpt.csv',
                          gpt_table=pd.DataFrame(),
                          alert_type='Update')
     def test_gen_id_dataframe_alert_type(self):
         """Test for string alert_type being 'Update' or 'Original'"""
         with self.assertRaises(ValueError):
-            generate_ids(out_filepath='./data/uw_alerts_gpt.csv',
+            generate_ids(uw_alert_file='./data/uw_alerts_gpt.csv',
                          gpt_table=pd.DataFrame({'Test': [1]}),
                          alert_type='Random')
+    def test_gen_id_parsing(self):
+        """Test for requiring boolean parsing"""
+        with self.assertRaises(ValueError):
+            generate_ids(uw_alert_file='./data/uw_alerts_gpt.csv',
+                         gpt_table=pd.DataFrame({'Test': [1]}),
+                         alert_type='Update',
+                         parsing='yes')
 
 class TestParseUWAlertsGenerateCSV(unittest.TestCase):
     """
@@ -139,6 +147,19 @@ class TestParseUWAlertsCleanGPTOutput(unittest.TestCase):
         """Test for requiring Pandas DataFrame input"""
         with self.assertRaises(ValueError):
             clean_gpt_output(gpt_output=[1,2,3])
+
+class TestParseUWAlertsScrapeUWAlerts(unittest.TestCase):
+    """
+    Test methods for scrape_uw_alerts function.
+    """
+    def test_scrape_uw_alerts_csv_fp(self):
+        """Test for requiring .csv filepath"""
+        with self.assertRaises(ValueError):
+            scrape_uw_alerts(uw_alert_filepath='./data/uw_alerts_clean.txt')
+    def test_scrape_uw_alerts_str_fp(self):
+        """Test for requiring string filepath"""
+        with self.assertRaises(ValueError):
+            scrape_uw_alerts(uw_alert_filepath=1)
 
 if __name__ == '__main__':
     unittest.main()
