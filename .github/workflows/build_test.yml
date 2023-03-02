@@ -92,7 +92,7 @@ jobs:
       - name: Lint with pylint
         run: |
           pylint /**/*.py
-          pyline *.py
+          pylint *.py
       # Next step: run the unit tests with code coverage.
       - name: Unit tests
         run: |
