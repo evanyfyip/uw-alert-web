@@ -17,3 +17,4 @@ dependencies:
     - -r requirements.txt
   - requests=2.28.1
   - bs4=4.11.1
+  - python-dotenv=0.21.0

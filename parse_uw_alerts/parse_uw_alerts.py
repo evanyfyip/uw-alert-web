@@ -2,6 +2,7 @@
 Functions to parse UW Alerts text data and extract 
 key incident information in a tabular format.
 """
+import os
 import io
 import time
 import re
@@ -9,31 +10,33 @@ import pandas as pd
 import openai
 from transformers import GPT2Tokenizer
 import googlemaps
-# from scraper import scrape_uw_alerts
+from dotenv import load_dotenv
 
-def prompt_gpt(lines):
+def prompt_gpt(lines, return_alert_type=False):
     """
     Arguments:
         lines - lines of text from .readlines output.
-        alert_start - start row of a UW alert mesage chunk.
-        alert_end - end row of a UW alert mesage chunk.
     Returns:
         A Pandas dataframe containing a structured 
         table from the UW alert message chunk.
     Exceptions:
         lines must be a list of length at least 1.
+        return_alert_type must be a boolean.
     """
     if not isinstance(lines, list):
         raise ValueError("lines must be a list")
     if len(lines) < 1:
         raise ValueError("lines must be at least length 1")
+    if not isinstance(return_alert_type, bool):
+        raise ValueError("return_alert_type must be a boolean")
 
     gpt_task = ('Extract a markdown table with the columns Date (mm/dd/yyyy),'
                 ' Report Time (hh:mm AM/PM), Incident Time (hh:mm AM/PM),'
                 ' Nearest Intersection to Incident, Incident Category, and'
                 ' Incident Summary from the following alert message.\n'
                 'Text: """')
-    alert_chunk = '\n'.join(lines)
+    alert_chunk = '\n'.join(line for line in lines if not line.isspace())
+    alert_chunk = alert_chunk.strip('\n')
     gpt_prompt = '\n'.join([gpt_task, alert_chunk])
     gpt_prompt += '"""'
     print(gpt_prompt)
@@ -50,28 +53,107 @@ def prompt_gpt(lines):
     gpt_table.drop(list(
         gpt_table.filter(regex = 'Unnamed')), axis = 1, inplace = True)
     column_names = ['Date', 'Report Time', 'Incident Time',
-                    'Nearest Intersection to Incident', 
-                    'Incident Category', 'Incident Summary']
+                    'Nearest Intersection to Incident', 'Incident Category',
+                    'Incident Summary']
     gpt_table.columns = column_names
-    gpt_table = gpt_table.iloc[1:]
+    if re.match('(:)?--', gpt_table['Date'].values[0]):
+        gpt_table = gpt_table.iloc[1:]
+    gpt_table.reset_index(inplace=True)
     gpt_table = gpt_table.loc[:, column_names]
+    alert_chunk = alert_chunk.split('\n')
+    alert_chunk = [line for line in alert_chunk if not line.isspace()]
+    alert_chunk = [line for line in alert_chunk if not re.match(
+        r'^[A-z]+\s\d{1,2},\s\d{4}$', line)]
+    alert_chunk = '\n'.join(alert_chunk)
+    gpt_table['Incident Alert'] = alert_chunk.strip('\n')
+    alert_type = 'Original'
+    for line in lines:
+        if re.match(r'(\[)?update(d)?(:|\s+)', line, re.IGNORECASE):
+            alert_type = 'Update'
+    gpt_table['Alert Type'] = alert_type
     for column in column_names:
         gpt_table[column] = gpt_table[column].astype(str).str.strip()
-    time.sleep(10)
+    time.sleep(5)
+    if return_alert_type:
+        return (gpt_table, alert_type)
     return gpt_table
 
-def parse_txt_data(filepath, out_filepath):
+def generate_ids(out_filepath, gpt_table, alert_type):
+    """
+    Arguments:
+        out_filepath - path to .csv file storing GPT output.
+        gpt_table - Pandas DataFrame of GPT output.
+        alert_type - string either 'Update' or 'Original'
+    Returns:
+        A Pandas DataFrame where gpt_table has added columns
+        containing the incident and alert ids.
+    Exceptions:
+        out_filepath must be a string with .csv extension.
+        gpt_table must be a Pandas DataFrame.
+    """
+    if not isinstance(out_filepath, str):
+        raise ValueError("out_filepath must be a string")
+    if re.search(r'\.csv$', out_filepath) is None:
+        raise ValueError("out_filepath must have a .csv extension")
+    if not isinstance(gpt_table, pd.DataFrame):
+        raise ValueError(
+            "gpt_output must be a filepath or Pandas DataFrame")
+    if len(gpt_table.index) == 0:
+        raise ValueError("gpt_table must have at least 1 row")
+    if alert_type not in ['Update', 'Original']:
+        raise ValueError("alert_type must be either 'Update' or 'Original'")
+
+    clean_data = pd.read_csv(out_filepath, index_col=False)
+    if len(clean_data.index) == 0:
+        gpt_table['Incident ID'] = 1
+        gpt_table['Alert ID'] = 1
+        return gpt_table
+    if clean_data['Alert Type'].values[-1] == 'Original':
+        gpt_table['Incident ID'] = clean_data['Incident ID'].values[-1] + 1
+    else:
+        gpt_table['Incident ID'] = clean_data['Incident ID'].values[-1]
+    gpt_table['Alert ID'] = clean_data['Alert ID'].values[-1] + 1
+    return pd.concat([clean_data, gpt_table], ignore_index=True)
+
+def generate_csv(out_filepath, lines):
+    """
+    Arguments:
+        out_filepath - path to .csv file storing GPT output.
+        lines - lines of text from .readlines output.
+    Returns:
+        None.
+    Exceptions:
+        out_filepath must be a string with .csv extension.
+        lines must be a list of length at least 1.
+    """
+    if not isinstance(out_filepath, str):
+        raise ValueError("filepath must be a string")
+    if re.search(r'\.csv$', out_filepath) is None:
+        raise ValueError("filepath must have a .csv extension")
+    if not isinstance(lines, list):
+        raise ValueError("lines must be a list")
+    if len(lines) < 1:
+        raise ValueError("lines must be at least length 1")
+    if lines[0] == lines[1]:
+        lines = lines[1:]
+    gpt_table = prompt_gpt(lines, return_alert_type=True)
+    alert_type = gpt_table[1]
+    gpt_table = gpt_table[0]
+    clean_data = generate_ids(out_filepath, gpt_table, alert_type)
+    clean_data.to_csv(out_filepath, index=False)
+
+def parse_txt_data(filepath, out_filepath, file_start=0):
     """
     Arguments:
         filepath - path to .txt file containing historial UW Alerts blogposts.
         out_filepath - path to .csv file storing GPT output.
+        file_start - int representing index at which parsing should start.
     Returns:
-        A Pandas dataframe where each row is a blogpost, and there are
-        columns containing the post date, post time, incident time, location,
-        incident category, the summarized UW Alert message.
+        None.
     Exceptions:
         filepath must be a string with .txt extension.
         out_filepath must be a string with .csv extension.
+        file_start must be an integer 0 or greater.
         Invalid inputs throw ValueError exceptions.
     """
     if not isinstance(filepath, str):
@@ -82,34 +164,42 @@ def parse_txt_data(filepath, out_filepath):
         raise ValueError("filepath must be a string")
     if re.search(r'\.csv$', out_filepath) is None:
         raise ValueError("filepath must have a .csv extension")
+    if not isinstance(file_start, int):
+        raise ValueError("file_start must be an integer 0 or greater")
+    if file_start < 0:
+        raise ValueError("file_start must be an integer 0 or greater")
 
     with open(filepath, encoding='UTF-8') as file:
         lines = file.readlines()
-        alert_chunk_start = None
-        alert_chunk_end = None
-        start = 326
-        for i, line in enumerate(lines[start:]):
-            if i + start == len(lines) - 1:
-                print((alert_chunk_start+start, i+start))
-                table = prompt_gpt(lines[(alert_chunk_start+start):(i+start)])
-                clean_data = pd.read_csv(out_filepath, index_col=False)
-                clean_data = pd.concat([clean_data, table], ignore_index=True)
-                clean_data.to_csv(out_filepath, index=False)
+        last_date = None
+        last_event = None
+        last_event_index = None
+        for i, line in enumerate(lines[file_start:]):
+            if (i + file_start) == (len(lines) - 1):
+                print((last_event_index, i+file_start))
+                generate_csv(out_filepath,
+                             [last_date]+lines[last_event_index:])
             date_check = re.match(r'^[A-z]+\s\d{1,2},\s\d{4}\n$', line)
             if date_check:
-                if alert_chunk_start is None:
-                    alert_chunk_start = i
-                else:
-                    alert_chunk_end = i
-                    print((alert_chunk_start+start, alert_chunk_end+start))
-                    table = prompt_gpt(
-                        lines[(alert_chunk_start+start):(alert_chunk_end+start)])
-                    clean_data = pd.read_csv(out_filepath, index_col=False)
-                    clean_data = pd.concat(
-                        [clean_data, table], ignore_index=True)
-                    clean_data.to_csv(out_filepath, index=False)
-                    alert_chunk_start = i
-    return clean_data
+                if last_event is not None:
+                    alert_end = i + file_start
+                    print((last_event_index, alert_end))
+                    generate_csv(
+                        out_filepath,
+                        [last_date]+lines[last_event_index:alert_end])
+                last_date = line
+                last_event = 'date'
+                last_event_index = i + file_start
+            if re.match(r'(\[)?update(d)?(:|\s+)', line, re.IGNORECASE) or re.match(
+                r'(\[)?original (post)?', line, re.IGNORECASE):
+                alert_end = i + file_start
+                if last_event == 'original/update':
+                    print((last_event_index, alert_end))
+                    generate_csv(
+                        out_filepath,
+                        [last_date]+lines[last_event_index:alert_end])
+                last_event = 'original/update'
+                last_event_index = i + file_start
 
 def clean_gpt_output(gpt_output='./data/uw_alerts_gpt.csv',
                      gmaps_client=None):
@@ -132,16 +222,28 @@ def clean_gpt_output(gpt_output='./data/uw_alerts_gpt.csv',
         if not re.search('.csv$', gpt_output):
             raise ValueError("gpt_output must be a .csv filepath")
         gpt_data = pd.read_csv(gpt_output, index_col=False)
-
     gpt_data['Date'] = pd.to_datetime(gpt_data['Date'],
-                                      infer_datetime_format=True)
+                                      infer_datetime_format=True,
+                                      errors='coerce')
+    gpt_data['Date'] = gpt_data.groupby(
+        ['Incident ID'], sort=False)['Date'].bfill()
     gpt_data['Date'] = gpt_data['Date'].dt.date
-    gpt_data['Report Time'] = gpt_data['Report Time'].str.upper()
-    gpt_data['Incident Time'] = gpt_data['Incident Time'].str.upper()
-    gpt_data['Report Time'] = gpt_data['Report Time'].str.replace(
-        r'\.|-|UNKNOWN', '', regex=True)
-    gpt_data['Incident Time'] = gpt_data['Incident Time'].str.replace(
-        r'\.|-|UNKNOWN', '', regex=True)
+    for column in ['Report Time', 'Incident Time']:
+        gpt_data[column] = gpt_data[column].str.upper()
+        gpt_data[column] = gpt_data[column].str.strip()
+        gpt_data[column] = pd.to_datetime(gpt_data[column],
+                                          infer_datetime_format=True,
+                                          errors='coerce')
+        gpt_data[column] = gpt_data.groupby(
+        ['Incident ID'], sort=False)[column].bfill()
+        gpt_data[column] = gpt_data[column].dt.time
+    gpt_data['Incident Alert'] = gpt_data['Incident Alert'].str.strip()
+    gpt_data['Nearest Intersection to Incident'] = gpt_data[
+        'Nearest Intersection to Incident'].str.replace(
+        r'^\-$', '', regex=True)
+    gpt_data['Nearest Intersection to Incident'] = gpt_data.groupby(
+        ['Incident ID'], sort=False)[
+        'Nearest Intersection to Incident'].bfill()
     gpt_data[['Nearest Intersection to Incident']] = gpt_data[
         ['Nearest Intersection to Incident']].fillna('')
     geocode_results = [gmaps_client.geocode(
@@ -154,16 +256,22 @@ def clean_gpt_output(gpt_output='./data/uw_alerts_gpt.csv',
     return gpt_data
 
 if __name__ == "__main__":
-    OPENAI_API_KEY =  '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'
-    GOOGLE_MAPS_API_KEY = 'AIzaSyCJ3lSOMFCV5NHsBAcyzM6wSP3reSu0qy4'
+    load_dotenv('./.env')
+    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+    GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
     FILEPATH = './data/UW_Alerts_2018_2022.txt'
     OUT_FILEPATH = './data/uw_alerts_gpt.csv'
     CLEAN_FILEPATH = './data/uw_alerts_clean.csv'
+    FILE_START = 461
     openai.api_key = OPENAI_API_KEY
     gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
-    # parse_txt_data(FILEPATH, OUT_FILEPATH)
-    # scraped_data = scrape_uw_alerts()
-    # for content in scraped_data:
-    #     print(content.text)
-    gpt_clean = clean_gpt_output(gmaps_client=gmaps)
-    gpt_clean.to_csv(CLEAN_FILEPATH, index=False)
+    if FILE_START == 0:
+        columns = ['Date', 'Report Time', 'Incident Time',
+                   'Nearest Intersection to Incident',
+                   'Incident Category', 'Incident Summary',
+                   'Incident Alert', 'Incident ID', 'Alert ID']
+        empty_file = pd.DataFrame({column: [] for column in columns})
+        empty_file.to_csv(OUT_FILEPATH, index=False)
+    # parse_txt_data(FILEPATH, OUT_FILEPATH, file_start=FILE_START)
+    # gpt_clean = clean_gpt_output(gmaps_client=gmaps)
+    # gpt_clean.to_csv(CLEAN_FILEPATH, index=False)
