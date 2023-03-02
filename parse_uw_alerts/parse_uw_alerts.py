@@ -11,6 +11,8 @@ import openai
 from transformers import GPT2Tokenizer
 import googlemaps
 from dotenv import load_dotenv
+from bs4 import BeautifulSoup
+import requests
 
 def prompt_gpt(lines, return_alert_type=False):
     """
@@ -78,42 +80,57 @@ def prompt_gpt(lines, return_alert_type=False):
         return (gpt_table, alert_type)
     return gpt_table
 
-def generate_ids(out_filepath, gpt_table, alert_type):
+def generate_ids(uw_alert_file, gpt_table, alert_type, parsing=False):
     """
     Arguments:
-        out_filepath - path to .csv file storing GPT output.
+        uw_alert_file - either a filepath to csv file or Pandas DataFrame.
         gpt_table - Pandas DataFrame of GPT output.
-        alert_type - string either 'Update' or 'Original'
+        alert_type - string either 'Update' or 'Original'.
+        parsing - Boolean for if function call is to parse .txt file.
     Returns:
         A Pandas DataFrame where gpt_table has added columns
         containing the incident and alert ids.
     Exceptions:
-        out_filepath must be a string with .csv extension.
+        uw_alert_file must be a filepath with .csv extension or
+        a Pandas DataFrame.
         gpt_table must be a Pandas DataFrame.
     """
-    if not isinstance(out_filepath, str):
-        raise ValueError("out_filepath must be a string")
-    if re.search(r'\.csv$', out_filepath) is None:
-        raise ValueError("out_filepath must have a .csv extension")
+    if not isinstance(uw_alert_file, str):
+        if not isinstance(uw_alert_file, pd.DataFrame):
+            raise ValueError(
+                "uw_alert_file must be a filepath or Pandas DataFrame")
+        clean_data = uw_alert_file.copy()
+    else:
+        if not re.search('.csv$', uw_alert_file):
+            raise ValueError("uw_alert_file must be a .csv filepath")
+        clean_data = pd.read_csv(uw_alert_file, index_col=False)
     if not isinstance(gpt_table, pd.DataFrame):
         raise ValueError(
-            "gpt_output must be a filepath or Pandas DataFrame")
+            "gpt_table must be a filepath or Pandas DataFrame")
     if len(gpt_table.index) == 0:
         raise ValueError("gpt_table must have at least 1 row")
     if alert_type not in ['Update', 'Original']:
         raise ValueError("alert_type must be either 'Update' or 'Original'")
+    if not isinstance(parsing, bool):
+        raise ValueError("parsing must be a boolean")
 
-    clean_data = pd.read_csv(out_filepath, index_col=False)
     if len(clean_data.index) == 0:
         gpt_table['Incident ID'] = 1
         gpt_table['Alert ID'] = 1
         return gpt_table
-    if clean_data['Alert Type'].values[-1] == 'Original':
-        gpt_table['Incident ID'] = clean_data['Incident ID'].values[-1] + 1
-    else:
+    gpt_table['Alert ID'] = clean_data['Alert ID'].max() + 1
+    if parsing:
+        if clean_data['Alert Type'].values[-1] == 'Original':
+            gpt_table['Incident ID'] = clean_data[
+                'Incident ID'].values[-1] + 1
+            return pd.concat([clean_data, gpt_table], ignore_index=True)
         gpt_table['Incident ID'] = clean_data['Incident ID'].values[-1]
-    gpt_table['Alert ID'] = clean_data['Alert ID'].values[-1] + 1
-    return pd.concat([clean_data, gpt_table], ignore_index=True)
+        return pd.concat([clean_data, gpt_table], ignore_index=True)
+    if clean_data['Alert Type'].values[0] == 'Update':
+        gpt_table['Incident ID'] = clean_data['Incident ID'].values[0]
+        return gpt_table
+    gpt_table['Incident ID'] = clean_data['Incident ID'].values[0] + 1
+    return gpt_table
 
 def generate_csv(out_filepath, lines):
     """
@@ -255,6 +272,41 @@ def clean_gpt_output(gpt_output='./data/uw_alerts_gpt.csv',
         result[0]['geometry'] for result in geocode_results]
     return gpt_data
 
+def scrape_uw_alerts(uw_alert_filepath='./data/uw_alerts_clean.csv'):
+    """
+    Arguments:
+        uw_alert_filepath - string containing filepath to clean UW Alerts data
+    Returns:
+        If a new alert was made, returns a Pandas DataFrame.
+        Otherwise, returns None.
+    Exceptions:
+        uw_alert_filepath must be a string with .csv extension.
+    """
+    if not isinstance(uw_alert_filepath, str):
+        raise ValueError("uw_alert_filepath must be a string")
+    if re.search(r'\.csv$', uw_alert_filepath) is None:
+        raise ValueError("uw_alert_filepath must have a .csv extension")
+    uw_alerts = pd.read_csv(uw_alert_filepath, index_col=False)
+    last_alert = uw_alerts['Incident Alert'].values[0]
+
+    url = "https://emergency.uw.edu/"
+    page = requests.get(url, timeout=10)
+    soup = BeautifulSoup(page.content,"html.parser")
+    main_content = soup.find(id="main_content")
+    p_tags = main_content.find_all('p')
+    for para in p_tags:
+        if re.search(r'^[A-z]+\s\d{1,2},\s\d{4}', para.text):
+            newest_alert_list = [para.text for para in p_tags[:2]]
+            break
+    if not re.search(last_alert, newest_alert_list[1]):
+        gpt_output = prompt_gpt(newest_alert_list, return_alert_type=True)
+        gpt_table = generate_ids(uw_alerts, gpt_output[0], gpt_output[1])
+        gpt_table = clean_gpt_output(gpt_table, gmaps_client=gmaps)
+        uw_alerts = pd.concat([gpt_table, uw_alerts], ignore_index=True)
+        uw_alerts.to_csv(uw_alert_filepath, index=False)
+        return gpt_table
+    return None
+
 if __name__ == "__main__":
     load_dotenv('./.env')
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
@@ -275,3 +327,4 @@ if __name__ == "__main__":
     # parse_txt_data(FILEPATH, OUT_FILEPATH, file_start=FILE_START)
     # gpt_clean = clean_gpt_output(gmaps_client=gmaps)
     # gpt_clean.to_csv(CLEAN_FILEPATH, index=False)
+    # scraped_data = scrape_uw_alerts()
