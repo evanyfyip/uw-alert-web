@@ -21,7 +21,11 @@ app = Flask(__name__)
 
 @app.route('/')
 def plot_folium_map():
-    map = get_folium_map()
+    # sample alerts
+    alert_coords = [[47.663082, -122.310859], [47.658377, -122.317777]]
+    alert_messages = ["Police looking for man with handgun on 47th St. near 16th Ave. Secure doors, avoid area if possible.",
+                      "Shooting reported near 42nd Ave NE/Roosevelt at 12:46pm. Shooter fled in white vehicle."]
+    map = get_folium_map(alert_coords, alert_messages)
     return render_template('/base.html', map_html=map)
 
 if __name__ == '__main__':
