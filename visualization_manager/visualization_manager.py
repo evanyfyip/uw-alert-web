@@ -15,12 +15,14 @@ outputs:
 - interactive street visualization
 """
 
+import os
 import pyproj
 import folium
 from folium.plugins import HeatMap
 import geopandas as gpd
 from shapely.geometry import Point
 from shapely.ops import nearest_points, transform
+import pandas as pd
 
 def filter_geodf(gdf, lat, lon, max_distance=10):
     """
@@ -94,40 +96,32 @@ def filter_geodf(gdf, lat, lon, max_distance=10):
 
     return gdf
 
-def get_folium_map(alert_coords, alert_messages):
+def get_folium_map(alert_df: pd.DataFrame):
     """
     Given information about alerts, return a rendered html leaflet map of the U-district area.
 
     Parameters
     ----------
-    alert_coords : List of List containing two Floats
-        A list of coordinates [lat, long]
-        representing alert locations
-    alert_messages : List of Str
-        Must be the same length as alert_coords
-        A list of alert descriptions corresponding to alert_coords
-        
+    # TODO: Complete function docstring
+    alert_df : pandas DataFrame containing relevant alerts to display
+        Relevant Columns:
+            - Incident Summary: 
+            - Geometry: 
+    
     Returns
     -------
     m_html : str
         A rendered html leaflet map to display on the web application.
+    marker_dict: dict
+        Stores every marker so that its text can be dynamically updated within the html front end.
     """
-
-    # alert_coords exceptions
-    for alert in alert_coords:
-        if not isinstance(alert, list) or len(alert) != 2:
-            raise ValueError("alert_coords must contain Lists of length 2")
-        if not isinstance(alert[0], (int, float)) or not isinstance(alert[1], (int, float)):
-            raise ValueError("coordinates in alert_coords must contain numbers")
         
-    # alert_messages exceptions
-    if not isinstance(alert_messages, list) or len(alert_messages) != len(alert_coords):
-        raise ValueError("alert_messages must be a list with the same length as alert_coords")
-    if any([True for alert in alert_messages if not isinstance(alert, str)]):
-        raise ValueError("alert_messages must only contain strings")
+    # TODO Make exceptions for input
 
     # Display the U-District area
-    gdf = gpd.read_file('../data/SeattleGISData/udistrict_streets.geojson')
+    dirname = os.path.dirname(__file__)
+    uDistrictStreets = os.path.join(dirname, "../data/SeattleGISData/udistrict_streets.geojson")
+    gdf = gpd.read_file(uDistrictStreets)
     # pylint: disable=line-too-long
     mapbox_api_key = 'pk.eyJ1IjoiZXZhbnlpcCIsImEiOiJjbGRxYnc3dXEwNWxxM25vNjRocHlsOHFyIn0.0H4RiKd8X94CeoXwEd4TgQ'
     tileset_id_str = "dark-v11"
@@ -137,17 +131,23 @@ def get_folium_map(alert_coords, alert_messages):
                     zoom_start=15, 
                     tiles = tile, 
                     attr="Maptiler Dark")
-    # Highlight the streets in U-District
-    # folium.Choropleth(
-    #     geo_data=gdf,
-    #     line_weight=2,
-    #     line_color='red'
-    # ).add_to(map)
 
-    ## TODO: Implement different coloring based on the urgency of an alert
+    alert_coords = [list(loc["location"].values()) for loc in alert_df["geometry"]]
+    print(alert_coords)
+
+    alert_messages = list(alert_df["Incident Summary"])
+
+    marker_dict = {}
+
     for i in range(len(alert_coords)):
         # Display streets that are close to the alert
         filtered_streets = filter_geodf(gdf, alert_coords[i][0], alert_coords[i][1])
+        folium.Choropleth(
+            geo_data=filtered_streets,
+            line_weight=6,
+            line_color='red',
+            line_opacity=0.5
+        ).add_to(map)
         folium.Choropleth(
             geo_data=filtered_streets,
             line_weight=3,
@@ -155,15 +155,17 @@ def get_folium_map(alert_coords, alert_messages):
         ).add_to(map)
 
         # Set a marker with an interactive popup
-        iframe = folium.IFrame("<b>" + alert_messages[i] + "</b>")
+        iframe = folium.IFrame("<p style=\"font-family:Georgia, serif\">" + alert_messages[i] + "</p>")
         popup = folium.Popup(iframe, min_width=300, max_width=300)
-        folium.Marker(
+        marker = folium.Marker(
             alert_coords[i],
             popup=popup
-        ).add_to(map)
+        )
+        marker_dict[marker] = alert_messages[i]
+        marker.add_to(map)
     
     # Create a heatmap layer for each alert
     HeatMap(alert_coords, radius=10, gradient = {0: 'blue', 0: 'lime', 0.5: 'red'}).add_to(map)
 
     m_html = map.get_root().render()
-    return m_html
+    return (m_html, marker_dict)
