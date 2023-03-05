@@ -119,6 +119,7 @@ def get_folium_map(alert_df: pd.DataFrame):
     # TODO Make exceptions for input
 
     # Display the U-District area
+
     dirname = os.path.dirname(__file__)
     uDistrictStreets = os.path.join(dirname, "../data/SeattleGISData/udistrict_streets.geojson")
     gdf = gpd.read_file(uDistrictStreets)

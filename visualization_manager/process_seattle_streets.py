@@ -44,6 +44,22 @@ def filter_seattle_streets():
     # 7. geometry: Geometry column
     relevant_cols = ['UNITDESC', 'STNAME_ORD', 'XSTRLO', 'XSTRHI', 'INTRLO', 'INTRHI', 'geometry']
     udist_gdf_sub = udist_gdf[relevant_cols]
+
+    lon1 = []
+    lon2 = []
+    lat1 = []
+    lat2 = []
+    for street in gdf['geometry']:
+        coords = np.array(street.coords)
+        lon1.append(coords[0, 0])
+        lon2.append(coords[1, 0])
+        lat1.append(coords[0, 1])
+        lat2.append(coords[1, 1])
+
+    gdf['lon1'] = lon1
+    gdf['lon2'] = lon2
+    gdf['lat1'] = lat1
+    gdf['lat2'] = lat2
     udist_gdf_sub.to_file('../data/SeattleGISData/udistrict_streets.geojson', driver='GeoJSON')
 
 def main():
