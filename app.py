@@ -3,7 +3,7 @@ import json
 import plotly
 import os
 import plotly.express as px
-
+import folium
 import sys
 import ast
 import numpy as np
