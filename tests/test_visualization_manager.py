@@ -5,6 +5,7 @@ import unittest
 import geopandas as gpd
 import numpy as np
 from visualization_manager.visualization_manager import filter_geodf
+from visualization_manager.visualization_manager import get_folium_map
 
 # Smoke test
 class TestFilterGeoDF(unittest.TestCase):
@@ -89,6 +90,77 @@ class TestFilterGeoDF(unittest.TestCase):
         for point in test_cases:
             with self.assertRaises(ValueError):
                 filter_geodf(gdf, lat=point[0], lon=point[1])
+
+class TestGetFoliumMap(unittest.TestCase):
+    """
+    Tests methods for get_folium_map function
+    in visualization_manager.py
+    """
+    # Smoke tests
+    def test_smoke(self):
+        """
+        Smoke test for get_folium_map
+        """
+        alert_coords = [[47.663082, -122.310859], [47.658377, -122.317777]]
+        alert_messages = ["Police looking for man with handgun on 47th St. near 16th Ave. Secure doors, avoid area if possible.",
+                        "Shooting reported near 42nd Ave NE/Roosevelt at 12:46pm. Shooter fled in white vehicle."]
+        map = get_folium_map(alert_coords, alert_messages)
+        self.assertTrue(True)
+
+    # TODO: Make one-shot tests
+
+    # Edge case tests
+    def test_alert_coords_type(self):
+        """
+        Edge case test to check that alert_coords is a list
+        """
+        test_cases = ["String", {}, np.array([3, 2, 2]), 34]
+        alert_messages = ["One", "Two"]
+        for test in test_cases:
+            with self.assertRaises(ValueError):
+                get_folium_map(test, alert_messages)
+
+    def test_alert_coords_type(self):
+        """
+        Edge case test to check that the coords in alert_coords are numbers
+        """
+        test_cases = ["String", {}, np.array([3, 2, 2])]
+        alert_messages = ["One", "Two"]
+        for test in test_cases:
+            alert_coords = [[test, -122.310859], [47.658377, -122.317777]]
+            with self.assertRaises(ValueError):
+                get_folium_map(alert_coords, alert_messages)
+
+    def test_alert_messages_type(self):
+        """
+        Edge case test to check that alert_messages is a list
+        """
+        alert_coords = [[47.663082, -122.310859], [47.658377, -122.317777]]
+        test_cases = ["String", {}, np.array([3, 2, 2]), 34]
+        for test in test_cases:
+            with self.assertRaises(ValueError):
+                get_folium_map(alert_coords, test)
+    
+    def test_alert_messages_length(self):
+        """
+        Edge case test to check that alert_messages is a list
+        """
+        alert_coords = [[47.663082, -122.310859], [47.658377, -122.317777]]
+        test_cases = [["One"], ["One", "Two", "Three"]]
+        for test in test_cases:
+            with self.assertRaises(ValueError):
+                get_folium_map(alert_coords, test)
+
+    def test_alert_messages_element_type(self):
+        """
+        Edge case test to check that the elements in alert_messages are strings
+        """
+        alert_coords = [[47.663082, -122.310859]]
+        test_cases = [{}, np.array([3, 2, 2]), 34]
+        for test in test_cases:
+            with self.assertRaises(ValueError):
+                get_folium_map(alert_coords, [test])
+
 
 if __name__ == '__main__':
     unittest.main()
