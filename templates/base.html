@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link
       rel="stylesheet"
       type="text/css"
@@ -18,11 +20,12 @@
       </nav>
       <div id="elementContainer">
         <div id="formcontainer">
-          <form id="formtag">
+          <form id="formtag" action="{{url_for('update_map')}}" method="POST">
             <label for="text-input" class="text-label">Test New Data for Map:</label>
-            <textarea id="test-input" name="text-input" placeholder="Enter in a UW Alert" ></textarea>
+            <textarea id="test-input" name="text-input" placeholder="Enter in a UW Alert"></textarea>
             <button type="submit" id="submitbutton">Beam Me Up!</button>
           </form>
+          <button id="update_button">CHANGE</button>
         </div>
         <div id="plotcontainer">
           <iframe
@@ -35,12 +38,39 @@
       </div>
       <script>
         var mapHtml = {{ map_html | safe | tojson}};
-        console.log('mapHtml:', mapHtml)
         var mapFrame = document.getElementById('map-frame');
         var mapFrameDoc = mapFrame.contentDocument || mapFrame.contentWindow.document;
         mapFrameDoc.open();
         mapFrameDoc.write(mapHtml);
         mapFrameDoc.close();
+      </script>
+
+      <script>
+        $(document).ready(function () {
+          function changeMap() {
+            $.ajax({
+              url: "/change_map",
+              type: "GET",
+              dataType: "html",
+              success: function (data) {
+                var mapFrame = document.getElementById("map-frame");
+                var mapFrameDoc =
+                mapFrame.contentDocument || mapFrame.contentWindow.document;
+                mapFrameDoc.open();
+                mapFrameDoc.write(data);
+                mapFrameDoc.close();
+              },
+              error: function (error) {
+                console.log("Error: " + error);
+              },
+            });
+          }
+
+          $("#update_button").on("click", function (event) {
+            event.preventDefault();
+            changeMap();
+          });
+        });
       </script>
     </div>
   </body>
