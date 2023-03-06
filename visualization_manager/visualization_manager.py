@@ -15,12 +15,68 @@ outputs:
 - interactive street visualization
 """
 
+from datetime import datetime, timedelta
 import pyproj
 import folium
 from folium.plugins import HeatMap
+import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
 from shapely.ops import nearest_points, transform
+
+
+def get_urgent_incidents(alerts_df, time_frame):
+    """
+    Retrieves and filters the uw_alerts_clean.csv
+    for the incidents that occured today.
+
+    Parameters
+    ----------
+    time_frame
+
+    Returns
+    -------
+    urgent_incidents_df : Dataframe
+        Pandas dataframe of the most urgent incidents
+    """
+    # Checking columns
+    cols = ['Incident ID', 'Alert ID', 'Date', 'Report Time']
+    for col in cols:
+        if col not in alerts_df.columns.to_list():
+            raise ValueError("Invalid alerts_df schema")
+
+    # Step 1: Extract dataframe of alerts with Report time
+    report_times_df = alerts_df[~alerts_df['Report Time'].isna()].copy()
+    # Filter by time. Remove alerts beyond time cutoff
+    report_times_df.loc[:, 'report_datetime'] = pd.to_datetime(
+        report_times_df['Date'] + \
+        ' ' + \
+        report_times_df['Report Time'])
+    # Extracting incidents that are within the timeframe
+    urgent_datetime_alerts = report_times_df[
+        report_times_df['report_datetime'] > datetime.now() - timedelta(hours=time_frame)]
+    incident_id_set1 = set(urgent_datetime_alerts['Incident ID'].drop_duplicates().to_list())
+
+    # Step 2: Keep incidents/alerts that occured on the same day, but have no Report time
+    alerts_df['date'] = pd.to_datetime(alerts_df['Date'])
+
+    # Filter by date
+    # Remove alerts with no report time
+    urgent_date_alerts = alerts_df[alerts_df['Report Time'].isna()]
+    today_filter = urgent_date_alerts['date'].dt.date == datetime.now().date()
+    urgent_date_alerts = urgent_date_alerts[today_filter]
+    incident_id_set2 = set(urgent_date_alerts['Incident ID'].drop_duplicates().to_list())
+
+    # Step 3: Joining two sets into all urgent ids
+    urgent_inc_ids = incident_id_set1 | incident_id_set2
+
+    # Step 4: Filtering original dataframe to alerts with urgent incident ids
+    urgent_alerts_df = alerts_df[alerts_df['Incident ID'].isin(urgent_inc_ids)]
+
+    urgent_alerts_df = urgent_alerts_df.drop(columns='date')
+
+    return urgent_alerts_df
+
 
 def filter_geodf(gdf, lat, lon, max_distance=10):
     """
@@ -82,7 +138,7 @@ def filter_geodf(gdf, lat, lon, max_distance=10):
         # Projecting each linestring
         projected_street = transform(project.transform, street)
         # find the nearest points on the line and point geometries
-        nearest_point_on_line, nearest_point_on_point = nearest_points(projected_street, 
+        nearest_point_on_line, nearest_point_on_point = nearest_points(projected_street,
             projected_alert_point)
         # calculate the distance between the two nearest points
         distance = nearest_point_on_line.distance(nearest_point_on_point)
@@ -119,7 +175,7 @@ def get_folium_map(alert_coords, alert_messages):
             raise ValueError("alert_coords must contain Lists of length 2")
         if not isinstance(alert[0], (int, float)) or not isinstance(alert[1], (int, float)):
             raise ValueError("coordinates in alert_coords must contain numbers")
-        
+
     # alert_messages exceptions
     if not isinstance(alert_messages, list) or len(alert_messages) != len(alert_coords):
         raise ValueError("alert_messages must be a list with the same length as alert_coords")
@@ -133,9 +189,9 @@ def get_folium_map(alert_coords, alert_messages):
     tileset_id_str = "dark-v11"
     tilesize_pixels = "512"
     tile = f"https://api.mapbox.com/styles/v1/mapbox/{tileset_id_str}/tiles/{tilesize_pixels}/{{z}}/{{x}}/{{y}}@2x?access_token={mapbox_api_key}"
-    map = folium.Map(location=[47.66, -122.32], 
-                    zoom_start=15, 
-                    tiles = tile, 
+    map = folium.Map(location=[47.66, -122.32],
+                    zoom_start=15,
+                    tiles = tile,
                     attr="Maptiler Dark")
     # Highlight the streets in U-District
     # folium.Choropleth(
@@ -161,7 +217,6 @@ def get_folium_map(alert_coords, alert_messages):
             alert_coords[i],
             popup=popup
         ).add_to(map)
-    
     # Create a heatmap layer for each alert
     HeatMap(alert_coords, radius=10, gradient = {0: 'blue', 0: 'lime', 0.5: 'red'}).add_to(map)
 
