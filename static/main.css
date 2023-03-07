@@ -11,11 +11,23 @@
     height: 100vh;
 }
 
+.title{
+    display:flex;
+    justify-content: left;
+    flex: 1.5;
+    font-family: 'Tilt Neon', sans-serif;
+    font-size: 30px;
+    color: #fff;
+    padding-left: 20px;
+}
+
 /*styling the navbar*/
 nav {
-    background-color: #333; 
+    background-color: #242424; 
     height: 10vh;
     line-height:10vh;
+    display:flex;
+    flex-direction:'row';
 }
   
 nav ul {
@@ -23,7 +35,8 @@ nav ul {
     list-style: none;
     justify-content: center;
     align-items: center;
-    display: flex; 
+    display: flex;
+    flex: 2;
 }
   
 nav ul li {
@@ -93,7 +106,7 @@ nav ul li a:hover {
 }
 
 #formcontainer{
-    background-color: #000000;
+    background-color: #121212;
 }
 #submitbutton{
     color:white;

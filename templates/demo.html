@@ -16,7 +16,7 @@
           <p>UW Alerts Map</p>
         </div>
         <ul>
-          <li><a href="#">HOME</a></li>
+          <li><a href="/">HOME</a></li>
           <li><a href="{{ url_for('demo') }}">DEMO</a></li>
           <li><a href="#">ABOUT</a></li>
           <li><a href="#">CONTACT</a></li>
@@ -25,7 +25,12 @@
       </nav>
       <div id="elementContainer">
         <div id="formcontainer">
-          
+          <form id="formtag" action="{{url_for('update_map')}}" method="POST">
+            <label for="text-input" class="text-label">Test New Data for Map:</label>
+            <textarea id="test-input" name="text-input" placeholder="Enter in a UW Alert"></textarea>
+            <button type="submit" id="submitbutton">Beam Me Up!</button>
+          </form>
+          <button id="update_button">CHANGE</button>
         </div>
         <div id="plotcontainer">
           <iframe
