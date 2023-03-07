@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 from dotenv import load_dotenv
 import json
 import plotly
@@ -28,11 +28,22 @@ def plot_folium_map():
     # sample alerts
     dirname = os.path.dirname(__file__)
     filename = os.path.join(dirname, "data/uw_alerts_clean.csv")
-    alert_df = pd.read_csv(filename, converters = {'geometry': ast.literal_eval})
-    map, marker_dict = get_folium_map(get_urgent_incidents(alert_df, 4))
-    # print(marker_dict)
+    alert_df = pd.read_csv(filename, converters = {'geometry': ast.literal_eval}).head(5)
+    map, marker_dict = get_folium_map(alert_df)
     return render_template('/base.html', map_html=map)
 
+@app.route('/submit', methods=['POST'])
+def submit():
+    return redirect(url_for('plot_folium_map'))
+
+@app.route('/demo', methods=['GET'])
+def demo():
+    # sample alerts
+    dirname = os.path.dirname(__file__)
+    filename = os.path.join(dirname, "data/uw_alerts_clean.csv")
+    alert_df = pd.read_csv(filename, converters = {'geometry': ast.literal_eval}).head(5)
+    map, marker_dict = get_folium_map(alert_df)
+    return render_template('/demo.html', map_html=map)
 
 @app.route('/update_map',methods=['POST'])
 def update_map():
