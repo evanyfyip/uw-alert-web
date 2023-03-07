@@ -21,8 +21,13 @@
       <div id="elementContainer">
         <div id="formcontainer">
           <form id="formtag" action="{{url_for('update_map')}}" method="POST">
-            <label for="text-input" class="text-label">Test New Data for Map:</label>
-            <textarea id="test-input" name="text-input" placeholder="Enter in a UW Alert"></textarea>
+            <label for="text-input" class="text-label"
+              >Test New Data for Map:</label>
+            <textarea
+              id="test-input"
+              name="text-input"
+              placeholder="Enter in a UW Alert"
+            ></textarea>
             <button type="submit" id="submitbutton">Beam Me Up!</button>
           </form>
           <button id="update_button">CHANGE</button>
@@ -49,13 +54,12 @@
         $(document).ready(function () {
           function changeMap() {
             $.ajax({
-              url: "/change_map",
+              url: "/update_map",
               type: "GET",
               dataType: "html",
               success: function (data) {
                 var mapFrame = document.getElementById("map-frame");
-                var mapFrameDoc =
-                mapFrame.contentDocument || mapFrame.contentWindow.document;
+                var mapFrameDoc = mapFrame.contentDocument || mapFrame.contentWindow.document;
                 mapFrameDoc.open();
                 mapFrameDoc.write(data);
                 mapFrameDoc.close();
@@ -66,7 +70,7 @@
             });
           }
 
-          $("#update_button").on("click", function (event) {
+          $("#submit_button").on("click", function (event) {
             event.preventDefault();
             changeMap();
           });
