@@ -189,9 +189,9 @@ def get_folium_map(alert_df: pd.DataFrame):
                     attr="Maptiler Dark")
 
     alert_coords = [list(loc["location"].values()) for loc in alert_df["geometry"]]
-    print(alert_coords)
-
-    alert_messages = list(alert_df["Incident Summary"])
+    alert_categories = list(alert_df["Incident Category"])
+    alert_messages = list(alert_df["Incident Alert"])
+    alert_nearest_intersections = list(alert_df["Nearest Intersection to Incident"])
 
     marker_dict = {}
 
@@ -200,22 +200,18 @@ def get_folium_map(alert_df: pd.DataFrame):
         filtered_streets = filter_geodf(gdf, alert_coords[i][0], alert_coords[i][1])
         folium.Choropleth(
             geo_data=filtered_streets,
-            line_weight=6,
+            line_weight=3,
             line_color='red',
             line_opacity=0.5
         ).add_to(map)
-        folium.Choropleth(
-            geo_data=filtered_streets,
-            line_weight=3,
-            line_color='blue'
-        ).add_to(map)
 
         # Set a marker with an interactive popup
-        iframe = folium.IFrame("<p style=\"font-family:Georgia, serif\">" + alert_messages[i] + "</p>")
-        popup = folium.Popup(iframe, min_width=300, max_width=300)
+        iframe = folium.IFrame("<center><h4>" + alert_categories[i] + "</h4><p style=\"font-family:Georgia, serif\">" + alert_nearest_intersections[i] + "</p></center>")
+        popup = folium.Popup(iframe, min_width=200, max_width=250)
         marker = folium.Marker(
             alert_coords[i],
-            popup=popup
+            popup=popup,
+            icon=folium.Icon(color = "red", icon="circle-exclamation", prefix="fa")
         )
         marker_dict[marker] = alert_messages[i]
         marker.add_to(map)
@@ -225,4 +221,3 @@ def get_folium_map(alert_df: pd.DataFrame):
 
     m_html = map.get_root().render()
     return (m_html, marker_dict)
- 

@@ -16,6 +16,7 @@ import plotly.graph_objects as go
 
 # Our modules
 from visualization_manager.visualization_manager import get_folium_map
+from visualization_manager.visualization_manager import get_urgent_incidents
 
 
 app = Flask(__name__)
@@ -25,8 +26,8 @@ def plot_folium_map():
     # sample alerts
     dirname = os.path.dirname(__file__)
     filename = os.path.join(dirname, "data/uw_alerts_clean.csv")
-    alert_df = pd.read_csv(filename, converters = {'geometry': ast.literal_eval}).head(5)
-    map, marker_dict = get_folium_map(alert_df)
+    alert_df = pd.read_csv(filename, converters = {'geometry': ast.literal_eval})
+    map, marker_dict = get_folium_map(get_urgent_incidents(alert_df, 4))
     # print(marker_dict)
     return render_template('/base.html', map_html=map)
 
