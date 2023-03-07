@@ -2,12 +2,119 @@
 Tests for visualization_manager.py
 """
 import unittest
+# from click import get_current_context
+from datetime import datetime, timedelta
 import geopandas as gpd
+import pandas as pd
+import pandas.testing as pdt
 import numpy as np
-from visualization_manager.visualization_manager import filter_geodf
-from visualization_manager.visualization_manager import get_folium_map
+from visualization_manager.visualization_manager \
+    import filter_geodf, get_folium_map, get_urgent_incidents
 
-# Smoke test
+class TestGetUrgentAlerts(unittest.TestCase):
+    """
+    Tests get_urgent_alerts method in
+    visualization_manager.py.
+    """
+
+    # Smoke test
+    def test_smoke(self):
+        """
+        Smoke test for get_urgent_alerts function
+        """
+        flag = True
+        try:
+            alerts_df = pd.read_csv('data/uw_alerts_clean.csv')
+            get_urgent_incidents(alerts_df, time_frame=4)
+        except ValueError:
+            flag = False
+        self.assertTrue(flag)
+
+    # One shot tests
+    def test_time_frame_cutoff(self):
+        """
+        get_urgent incidents should filter the
+        incidents dataframe based on whether the
+        date and report time was within the timeframe of 
+        4 hours before the current time.
+        """
+        today = datetime.today()
+        two_days_ago = today - timedelta(days=2)
+        cols = ["Alert ID", "Incident ID", "Date", "Report Time", "Keep"]
+        data = [["1", "1", two_days_ago.strftime('%m/%d/%Y'),
+                    two_days_ago.strftime("%H:%M"), False],
+                ["2", "2", today.strftime('%m/%d/%Y'), today.strftime("%H:%M"), True],
+                ["3", "2", (today - timedelta(hours=3)).strftime('%m/%d/%Y'),
+                    (today - timedelta(hours=3)).strftime("%H:%M"), True],
+                ["4", "2", (today - timedelta(hours=5)).strftime('%m/%d/%Y'),
+                    (today - timedelta(hours=5)).strftime("%H:%M"), True],
+                ["5", "2", (today - timedelta(hours=6)).strftime('%m/%d/%Y'),
+                    (today - timedelta(hours=6)).strftime("%H:%M"), True],
+                ["6", "4", (today - timedelta(hours=10)).strftime('%m/%d/%Y'),
+                    (today - timedelta(hours=10)).strftime("%H:%M"), False]]
+        test_data = pd.DataFrame(data, columns=cols)
+        expected = test_data[test_data['Keep']]
+        result = get_urgent_incidents(alerts_df=test_data, time_frame=4)
+        pdt.assert_frame_equal(expected, result)
+
+    def test_missing_report_times(self):
+        """
+        get_urgent incidents should filter based
+        on report time and date first, but if there
+        is no report time, it should take any incidents
+        that occured that day."""
+        today = datetime.today()
+        two_days_ago = today - timedelta(days=2)
+        cols = ["Alert ID", "Incident ID", "Date", "Report Time", "Keep"]
+        data = [["1", "1", two_days_ago.strftime('%m/%d/%Y'),
+                    two_days_ago.strftime("%H:%M"), False],
+                ["2", "2", today.strftime('%m/%d/%Y'), today.strftime("%H:%M"), True],
+                ["3", "2", (today - timedelta(hours=3)).strftime('%m/%d/%Y'),
+                    (today - timedelta(hours=3)).strftime("%H:%M"), True],
+                ["4", "2", (today - timedelta(hours=5)).strftime('%m/%d/%Y'),
+                    (today - timedelta(hours=5)).strftime("%H:%M"), True],
+                ["5", "2", (today - timedelta(hours=6)).strftime('%m/%d/%Y'),
+                    (today - timedelta(hours=6)).strftime("%H:%M"), True],
+                ["6", "4", today.strftime('%m/%d/%Y'), None, True]]
+        test_data = pd.DataFrame(data, columns=cols)
+        expected = test_data[test_data['Keep']]
+        result = get_urgent_incidents(alerts_df=test_data, time_frame=4)
+        pdt.assert_frame_equal(expected, result)
+
+    def test_no_urgent_incidents(self):
+        """
+        Tests the case where all incidents are
+        outside of the timeframe, so get_urgent_incidents
+        should return no incidents.
+        """
+        today = datetime.today()
+        two_days_ago = today - timedelta(days=2)
+        cols = ["Alert ID", "Incident ID", "Date", "Report Time", "Keep"]
+        data = [["1", "1", two_days_ago.strftime('%m/%d/%Y'),
+                    two_days_ago.strftime("%H:%M"), False],
+                ["2", "2", (today - timedelta(hours=5)).strftime('%m/%d/%Y'),
+                    (today - timedelta(hours=5)).strftime("%H:%M"), False],
+                ["3", "3", (today - timedelta(hours=6)).strftime('%m/%d/%Y'),
+                    (today - timedelta(hours=6)).strftime("%H:%M"), False],
+                ["4", "4", (today - timedelta(hours=10)).strftime('%m/%d/%Y'),
+                    (today - timedelta(hours=10)).strftime("%H:%M"), False]]
+        test_data = pd.DataFrame(data, columns=cols)
+        expected = test_data[test_data['Keep']]
+        result = get_urgent_incidents(alerts_df=test_data, time_frame=4)
+        pdt.assert_frame_equal(expected, result)
+
+    # Edge cases
+    def test_dataframe_schema(self):
+        """
+        Testing get_urgent_incidents, raising
+        ValueError if essential columns are missing.
+        """
+        cols = ['Alert ID', 'Incident ID', 'Date']
+        data = [['1', '2', '3/4/23']]
+        test_data = pd.DataFrame(data, columns=cols)
+        with self.assertRaises(ValueError):
+            get_urgent_incidents(alerts_df=test_data, time_frame=4)
+
 class TestFilterGeoDF(unittest.TestCase):
     """
     Tests methods for filter_geodf function
@@ -90,6 +197,7 @@ class TestFilterGeoDF(unittest.TestCase):
         for point in test_cases:
             with self.assertRaises(ValueError):
                 filter_geodf(gdf, lat=point[0], lon=point[1])
+
 
 # TODO: Create Tests
 # class TestGetFoliumMap(unittest.TestCase):
