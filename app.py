@@ -16,6 +16,7 @@ import plotly.graph_objects as go
 
 # Our modules
 from visualization_manager.visualization_manager import get_folium_map
+from visualization_manager.visualization_manager import get_urgent_incidents
 
 
 app = Flask(__name__)
