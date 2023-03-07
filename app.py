@@ -8,7 +8,7 @@ import folium
 import sys
 import ast
 import numpy as np
-
+import geopandas as gpd
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.io as pio
@@ -18,12 +18,8 @@ import plotly.graph_objects as go
 
 # Our modules
 from visualization_manager.visualization_manager import get_folium_map
-<<<<<<< Updated upstream
 from visualization_manager.visualization_manager import get_urgent_incidents
-
-=======
 import parse_uw_alerts
->>>>>>> Stashed changes
 
 app = Flask(__name__)
 
@@ -53,9 +49,7 @@ def update_map():
     gpt_table = parse_uw_alerts.clean_gpt_output(gpt_output = cleaned_gpt_output,gmaps_client=gmaps)
     uw_alerts =pd.concat([gpt_table,uw_alerts],ignore_index=True)
     uw_alerts.to_csv(uw_alert_filepath,index=False)
-
-    #TODO: combine all modules here to update the map
-    return new_data
+    return "yo"
 
 @app.route('/change_map')
 def change_map():
