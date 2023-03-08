@@ -126,10 +126,10 @@ def generate_ids(uw_alert_file, gpt_table, alert_type, parsing=False):
             return pd.concat([clean_data, gpt_table], ignore_index=True)
         gpt_table['Incident ID'] = clean_data['Incident ID'].values[-1]
         return pd.concat([clean_data, gpt_table], ignore_index=True)
-    if clean_data['Alert Type'].values[0] == 'Update':
+    if gpt_table['Alert Type'].values[0] == 'Update':
         gpt_table['Incident ID'] = clean_data['Incident ID'].values[0]
         return gpt_table
-    gpt_table['Incident ID'] = clean_data['Incident ID'].values[0] + 1
+    gpt_table['Incident ID'] = clean_data['Incident ID'].max() + 1
     return gpt_table
 
 def generate_csv(out_filepath, lines):

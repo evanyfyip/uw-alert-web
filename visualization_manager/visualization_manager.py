@@ -190,8 +190,7 @@ def get_folium_map(alert_df: pd.DataFrame):
 
     alert_coords = [list(loc["location"].values()) for loc in alert_df["geometry"]]
     # alert_coords = [print(loc) for loc in alert_df["geometry"]]
-    for loc in alert_df['geometry']:
-        print(loc)
+    
     alert_categories = list(alert_df["Incident Category"])
     alert_messages = list(alert_df["Incident Alert"])
     alert_nearest_intersections = list(alert_df["Nearest Address to Incident"])
