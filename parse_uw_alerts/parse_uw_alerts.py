@@ -64,8 +64,7 @@ def prompt_gpt(lines, return_alert_type=False):
     gpt_table = gpt_table.loc[:, column_names]
     alert_chunk = alert_chunk.split('\n')
     alert_chunk = [line for line in alert_chunk if not line.isspace()]
-    alert_chunk = [line for line in alert_chunk if not re.match(
-        r'^[A-z]+\s\d{1,2},\s\d{4}$', line)]
+    alert_chunk = alert_chunk[1:]
     alert_chunk = '\n'.join(alert_chunk)
     gpt_table['Incident Alert'] = alert_chunk.strip('\n')
     alert_type = 'Original'
@@ -126,10 +125,10 @@ def generate_ids(uw_alert_file, gpt_table, alert_type, parsing=False):
             return pd.concat([clean_data, gpt_table], ignore_index=True)
         gpt_table['Incident ID'] = clean_data['Incident ID'].values[-1]
         return pd.concat([clean_data, gpt_table], ignore_index=True)
-    if clean_data['Alert Type'].values[0] == 'Update':
+    if gpt_table['Alert Type'].values[0] == 'Update':
         gpt_table['Incident ID'] = clean_data['Incident ID'].values[0]
         return gpt_table
-    gpt_table['Incident ID'] = clean_data['Incident ID'].values[0] + 1
+    gpt_table['Incident ID'] = clean_data['Incident ID'].max() + 1
     return gpt_table
 
 def generate_csv(out_filepath, lines):
