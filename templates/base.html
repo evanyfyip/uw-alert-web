@@ -61,7 +61,7 @@
             $.ajax({
               url: "/update_map",
               type: "GET",
-              dataType: "html",
+              dataType: "json",
               success: function (data) {
                 var mapFrame = document.getElementById("map-frame");
                 var mapFrameDoc = mapFrame.contentDocument || mapFrame.contentWindow.document;

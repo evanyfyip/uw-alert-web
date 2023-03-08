@@ -74,7 +74,7 @@ def update_map():
     filename = os.path.join(dirname, "data/uw_alerts_clean.csv")
     alert_df = pd.read_csv(filename, converters = {'geometry': ast.literal_eval})
     map, marker_dict = get_folium_map(get_urgent_incidents(alert_df, time_frame=2))
-    return map
+    return render_template('/demo.html', map_html=map)
 
 @app.route('/change_map')
 def change_map():
