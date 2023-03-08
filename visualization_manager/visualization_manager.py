@@ -1,15 +1,14 @@
 """
-Name: Visualization Manager 
-What it does: 
-- Renders an interactive street map visualization 
-    - highlights specific streets of interest 
-
-- Includes details of uw alert events 
-inputs: 
-- street: 
+Name: Visualization Manager
+What it does:
+- Renders an interactive street map visualization
+    - highlights specific streets of interest
+- Includes details of uw alert events
+inputs:
+- street:
 - alert_type:
-- description: 
-- time: 
+- description:
+- time:
 
 outputs:
 - interactive street visualization
@@ -24,8 +23,6 @@ import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
 from shapely.ops import nearest_points, transform
-import pandas as pd
-
 
 def get_urgent_incidents(alerts_df, time_frame):
     """
@@ -98,7 +95,7 @@ def filter_geodf(gdf, lat, lon, max_distance=10):
     max_distance: int (default=10)
         The max distance of streets from the point
         in meters
-    
+
     Returns
     -------
     gdf : Geopandas dataframe
@@ -152,18 +149,21 @@ def filter_geodf(gdf, lat, lon, max_distance=10):
 
     return gdf
 
-def get_folium_map(alert_df: pd.DataFrame):
+def get_folium_map(alert_df):
     """
     Given information about alerts, return a rendered html leaflet map of the U-district area.
 
     Parameters
     ----------
-    # TODO: Complete function docstring
-    alert_df : pandas DataFrame containing relevant alerts to display
+    alert_df : pandas DataFrame containing our "database" of alerts
         Relevant Columns:
-            - Incident Summary: 
-            - Geometry: 
-    
+            - Nearest Address to Incident: str - The closest intersection to the incident
+                origin derived from Chat GPT analysis
+            - Incident Category: str - The type of incident derived from Chat GPT analysis
+            - Incident Alert: str - The incident alert derived from the UW Alerts blog
+            - Geometry: dict
+                - The "location" key contains a coordinate pair value
+
     Returns
     -------
     m_html : str
@@ -171,56 +171,51 @@ def get_folium_map(alert_df: pd.DataFrame):
     marker_dict: dict
         Stores every marker so that its text can be dynamically updated within the html front end.
     """
-    # TODO Make exceptions for input
+    # alert_df exceptions
+    # pylint: disable=line-too-long
+    if not isinstance(alert_df, pd.DataFrame):
+        raise TypeError("alert_df must be a pandas DataFrame")
+    for col in ["Incident Category", "Incident Alert", "Nearest Address to Incident", "geometry"]:
+        if col not in alert_df.columns:
+            raise ValueError("""alert_df must have the following columns: Incident Category,
+                                Incident Alert, Nearest Address to Incident, geometry""")
 
     # Display the U-District area
-
-    dirname = os.path.dirname(__file__)
-    uDistrictStreets = os.path.join(dirname, "../data/SeattleGISData/udistrict_streets.geojson")
-    gdf = gpd.read_file(uDistrictStreets)
-    # pylint: disable=line-too-long
+    gdf = gpd.read_file(os.path.join(os.path.dirname(__file__), "../data/SeattleGISData/udistrict_streets.geojson"))
     mapbox_api_key = 'pk.eyJ1IjoiZXZhbnlpcCIsImEiOiJjbGRxYnc3dXEwNWxxM25vNjRocHlsOHFyIn0.0H4RiKd8X94CeoXwEd4TgQ'
-    tileset_id_str = "dark-v11"
-    tilesize_pixels = "512"
-    tile = f"https://api.mapbox.com/styles/v1/mapbox/{tileset_id_str}/tiles/{tilesize_pixels}/{{z}}/{{x}}/{{y}}@2x?access_token={mapbox_api_key}"
-    map = folium.Map(location=[47.66, -122.32],
-                    zoom_start=15,
-                    tiles = tile,
-                    attr="Maptiler Dark")
+    html_map = folium.Map(location=[47.66, -122.32],
+                          zoom_start=15,
+                          tiles = f"https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/512/{{z}}/{{x}}/{{y}}@2x?access_token={mapbox_api_key}",
+                          attr="Maptiler Dark")
 
     alert_coords = [list(loc["location"].values()) for loc in alert_df["geometry"]]
-    # alert_coords = [print(loc) for loc in alert_df["geometry"]]
-    for loc in alert_df['geometry']:
-        print(loc)
     alert_categories = list(alert_df["Incident Category"])
     alert_messages = list(alert_df["Incident Alert"])
     alert_nearest_intersections = list(alert_df["Nearest Address to Incident"])
 
     marker_dict = {}
 
-    for i in range(len(alert_coords)):
+    for i, coord in enumerate(alert_coords):
         # Display streets that are close to the alert
-        filtered_streets = filter_geodf(gdf, alert_coords[i][0], alert_coords[i][1])
+        filtered_streets = filter_geodf(gdf, coord[0], coord[1])
         folium.Choropleth(
             geo_data=filtered_streets,
             line_weight=3,
             line_color='red',
             line_opacity=0.5
-        ).add_to(map)
+        ).add_to(html_map)
 
         # Set a marker with an interactive popup
         iframe = folium.IFrame("<center><h4>" + str(alert_categories[i]) + "</h4><p style=\"font-family:Georgia, serif\">" + str(alert_nearest_intersections[i]) + "</p></center>")
-        popup = folium.Popup(iframe, min_width=200, max_width=250)
         marker = folium.Marker(
-            alert_coords[i],
-            popup=popup,
+            coord,
+            popup=folium.Popup(iframe, min_width=200, max_width=250),
             icon=folium.Icon(color = "red", icon="circle-exclamation", prefix="fa")
         )
         marker_dict[marker] = alert_messages[i]
-        marker.add_to(map)
-    
-    # Create a heatmap layer for each alert
-    HeatMap(alert_coords, radius=10, gradient = {0: 'blue', 0: 'lime', 0.5: 'red'}).add_to(map)
+        marker.add_to(html_map)
 
-    m_html = map.get_root().render()
-    return (m_html, marker_dict)
+    # Create a heatmap layer for each alert
+    HeatMap(alert_coords, radius=10, gradient = {0: 'blue', 0.5: 'red'}).add_to(html_map)
+
+    return (html_map.get_root().render(), marker_dict)
