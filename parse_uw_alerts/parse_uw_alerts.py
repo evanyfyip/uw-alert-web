@@ -64,8 +64,7 @@ def prompt_gpt(lines, return_alert_type=False):
     gpt_table = gpt_table.loc[:, column_names]
     alert_chunk = alert_chunk.split('\n')
     alert_chunk = [line for line in alert_chunk if not line.isspace()]
-    alert_chunk = [line for line in alert_chunk if not re.match(
-        r'^[A-z]+\s\d{1,2},\s\d{4}$', line)]
+    alert_chunk = alert_chunk[1:]
     alert_chunk = '\n'.join(alert_chunk)
     gpt_table['Incident Alert'] = alert_chunk.strip('\n')
     alert_type = 'Original'
