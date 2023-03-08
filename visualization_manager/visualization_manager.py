@@ -189,9 +189,12 @@ def get_folium_map(alert_df: pd.DataFrame):
                     attr="Maptiler Dark")
 
     alert_coords = [list(loc["location"].values()) for loc in alert_df["geometry"]]
+    # alert_coords = [print(loc) for loc in alert_df["geometry"]]
+    for loc in alert_df['geometry']:
+        print(loc)
     alert_categories = list(alert_df["Incident Category"])
     alert_messages = list(alert_df["Incident Alert"])
-    alert_nearest_intersections = list(alert_df["Nearest Intersection to Incident"])
+    alert_nearest_intersections = list(alert_df["Nearest Address to Incident"])
 
     marker_dict = {}
 
@@ -206,7 +209,7 @@ def get_folium_map(alert_df: pd.DataFrame):
         ).add_to(map)
 
         # Set a marker with an interactive popup
-        iframe = folium.IFrame("<center><h4>" + alert_categories[i] + "</h4><p style=\"font-family:Georgia, serif\">" + alert_nearest_intersections[i] + "</p></center>")
+        iframe = folium.IFrame("<center><h4>" + str(alert_categories[i]) + "</h4><p style=\"font-family:Georgia, serif\">" + str(alert_nearest_intersections[i]) + "</p></center>")
         popup = folium.Popup(iframe, min_width=200, max_width=250)
         marker = folium.Marker(
             alert_coords[i],
