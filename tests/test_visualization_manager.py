@@ -3,13 +3,13 @@ Tests for visualization_manager.py
 """
 import unittest
 import ast
-from folium import Marker, Icon, IFrame, Popup
-# from click import get_current_context
 from datetime import datetime, timedelta
+
 import geopandas as gpd
 import pandas as pd
 import pandas.testing as pdt
 import numpy as np
+
 from visualization_manager.visualization_manager \
     import filter_geodf, get_folium_map, get_urgent_incidents
 
@@ -214,32 +214,12 @@ class TestGetFoliumMap(unittest.TestCase):
         """
         flag = True
         try:
-            alert_df = pd.read_csv('data/uw_alerts_clean.csv', converters = {'geometry': ast.literal_eval}).head()
+            alert_df = pd.read_csv('data/uw_alerts_clean.csv',
+                                   converters = {'geometry': ast.literal_eval}).head()
             get_folium_map(alert_df)
         except ValueError:
             flag = False
         self.assertTrue(flag)
-    
-    # def test_marker(self):
-    #     """
-    #     One shot test for coordinates on 
-    #     42nd street between 9th and Roosevelt
-    #     """
-    #     alert_df = pd.DataFrame({
-    #         "Nearest Address to Incident": "NE 47th St. and 16th Ave. NE",
-    #         "Incident Category": "Armed Person",
-    #         "Incident Alert":"UPDATED at 2:39 p.m. Thursday: Police have not found the man reportedly running near NE 47th St. and 16th Ave. NE with a gun, but continue to patrol the area. The man is described as between 40 and 50 years old, wearing a black, puffy jacket. The area is considered to be reopened. Please stay vigilant and do not engage with anyone who may be armed. Report any potential sightings to 911.",
-    #     }, index=[0])
-    #     alert_df['geometry'] = {'location': {'lat': 47.6630787, 'lng': -122.3108205}, 'location_type': 'GEOMETRIC_CENTER', 'viewport': {'northeast': {'lat': 47.6644276802915, 'lng': -122.3094715197085}, 'southwest': {'lat': 47.6617297197085, 'lng': -122.3121694802915}}}
-
-    #     print(alert_df)
-
-    #     iframe = IFrame("<center><h4>Armed Person</h4><p style=\"font-family:Georgia, serif\">NE 47th St. and 16th Ave. NE</p></center>")
-    #     popup = Popup(iframe, min_width=200, max_width=250)
-    #     test_marker_dict = {Marker([47.6630787,-122.3108205], popup=popup, icon=Icon(color = "red", icon="circle-exclamation", prefix="fa")): "UPDATED at 2:39 p.m. Thursday: Police have not found the man reportedly running near NE 47th St. and 16th Ave. NE with a gun, but continue to patrol the area. The man is described as between 40 and 50 years old, wearing a black, puffy jacket. The area is considered to be reopened. Please stay vigilant and do not engage with anyone who may be armed. Report any potential sightings to 911."}
-    #     map, marker_dict = get_folium_map(alert_df)
-
-    #     self.assertEqual(test_marker_dict, marker_dict)
 
     # Edge case tests
     def test_not_pandas_dataframe(self):
@@ -250,12 +230,14 @@ class TestGetFoliumMap(unittest.TestCase):
         for alert_df in test_cases:
             with self.assertRaises(TypeError):
                 get_folium_map(alert_df)
-    
-    def test_not_pandas_dataframe(self):
+
+    def test_dataframe_has_necessary_columns(self):
         """
         Edge case test to check that alert_df has the necessary columns
         """
-        alert_df = pd.read_csv('data/uw_alerts_clean.csv', converters = {'geometry': ast.literal_eval}).head().drop("geometry", axis = 1)
+        alert_df = pd.read_csv('data/uw_alerts_clean.csv',
+                               converters = {'geometry': ast.literal_eval}).head().drop("geometry",
+                                                                                        axis = 1)
         with self.assertRaises(ValueError):
             get_folium_map(alert_df)
 
