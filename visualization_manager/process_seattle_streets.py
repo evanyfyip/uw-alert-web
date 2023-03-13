@@ -5,6 +5,9 @@ import geopandas as gpd
 import numpy as np
 
 def filter_seattle_streets():
+    """
+    Filter the streets relevant to U-District
+    """
     gdf = gpd.read_file('../data/SeattleGISData/Seattle_Streets.geojson')
 
     lon1 = []
@@ -22,15 +25,15 @@ def filter_seattle_streets():
     gdf['lon2'] = lon2
     gdf['lat1'] = lat1
     gdf['lat2'] = lat2
-    
+
     longitude_bounds = (-122.2980, -122.3230)
     latitude_bounds = (47.67657, 47.6499)
     # Filtering for udistrict
-    lon1_filt = (gdf['lon1'] > longitude_bounds[1])& (gdf['lon1'] <= longitude_bounds[0]) 
-    lon2_filt = (gdf['lon2'] > longitude_bounds[1])& (gdf['lon2'] <= longitude_bounds[0]) 
+    lon1_filt = (gdf['lon1'] > longitude_bounds[1])& (gdf['lon1'] <= longitude_bounds[0])
+    lon2_filt = (gdf['lon2'] > longitude_bounds[1])& (gdf['lon2'] <= longitude_bounds[0])
 
-    lat1_filt = (gdf['lat1'] > latitude_bounds[1])& (gdf['lat1'] <= latitude_bounds[0]) 
-    lat2_filt = (gdf['lat2'] > latitude_bounds[1])& (gdf['lat2'] <= latitude_bounds[0]) 
+    lat1_filt = (gdf['lat1'] > latitude_bounds[1])& (gdf['lat1'] <= latitude_bounds[0])
+    lat2_filt = (gdf['lat2'] > latitude_bounds[1])& (gdf['lat2'] <= latitude_bounds[0])
 
     udist_gdf = gdf[lon1_filt & lat1_filt & lon2_filt & lat2_filt]
 
@@ -39,11 +42,13 @@ def filter_seattle_streets():
     # 2. STNAME_ORD: Street segment name
     # 3. XSTRLO: Cross street at low end of segment
     # 4. XSTRHI: Cross street at high end of segment
-    # 5. INTRLO: Description of the intersection location with cross street at low address  end of segment
-    # 6. INTRHI: Description of the intersection location with cross street at high address  end of segment
+    # 5. INTRLO: Description of the intersection location with cross street at
+    #            low address end of segment
+    # 6. INTRHI: Description of the intersection location with cross street at
+    #            high address end of segment
     # 7. geometry: Geometry column
-    relevant_cols = ['UNITDESC', 'STNAME_ORD', 'XSTRLO', 'XSTRHI', 'INTRLO', 'INTRHI', 'geometry']
-    udist_gdf_sub = udist_gdf[relevant_cols]
+    udist_gdf_sub = udist_gdf[['UNITDESC', 'STNAME_ORD', 'XSTRLO', 'XSTRHI',
+                               'INTRLO', 'INTRHI', 'geometry']]
 
     lon1 = []
     lon2 = []
@@ -63,6 +68,9 @@ def filter_seattle_streets():
     udist_gdf_sub.to_file('../data/SeattleGISData/udistrict_streets.geojson', driver='GeoJSON')
 
 def main():
+    """
+    Run filter_seattle_streets
+    """
     filter_seattle_streets()
 
 if __name__ == '__main__':

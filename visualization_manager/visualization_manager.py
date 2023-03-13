@@ -168,8 +168,6 @@ def get_folium_map(alert_df):
     -------
     m_html : str
         A rendered html leaflet map to display on the web application.
-    marker_dict: dict
-        Stores every marker so that its text can be dynamically updated within the html front end.
     """
     # alert_df exceptions
     # pylint: disable=line-too-long
@@ -190,10 +188,7 @@ def get_folium_map(alert_df):
 
     alert_coords = [list(loc["location"].values()) for loc in alert_df["geometry"]]
     alert_categories = list(alert_df["Incident Category"])
-    alert_messages = list(alert_df["Incident Alert"])
     alert_nearest_intersections = list(alert_df["Nearest Address to Incident"])
-
-    marker_dict = {}
 
     for i, coord in enumerate(alert_coords):
         # Display streets that are close to the alert
@@ -212,10 +207,9 @@ def get_folium_map(alert_df):
             popup=folium.Popup(iframe, min_width=200, max_width=250),
             icon=folium.Icon(color = "red", icon="circle-exclamation", prefix="fa")
         )
-        marker_dict[marker] = alert_messages[i]
         marker.add_to(html_map)
 
     # Create a heatmap layer for each alert
     HeatMap(alert_coords, radius=10, gradient = {0: 'blue', 0.5: 'red'}).add_to(html_map)
 
-    return (html_map.get_root().render(), marker_dict)
+    return html_map.get_root().render()
