@@ -292,6 +292,11 @@ def scrape_uw_alerts(uw_alert_filepath='./data/uw_alerts_clean.csv'):
         raise ValueError("uw_alert_filepath must be a string")
     if re.search(r'\.csv$', uw_alert_filepath) is None:
         raise ValueError("uw_alert_filepath must have a .csv extension")
+    load_dotenv('./.env')
+    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+    GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
+    openai.api_key = OPENAI_API_KEY
+    gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
     uw_alerts = pd.read_csv(uw_alert_filepath, index_col=False)
     last_alert = uw_alerts['Incident Alert'].values[0]
 
