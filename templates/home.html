@@ -16,26 +16,20 @@
           <p>UW Alerts Map</p>
         </div>
         <ul>
-          <li><a href="#">HOME</a></li>
-          <li><a href="{{ url_for('demo') }}">DEMO</a></li>
+          <li><a href="/">HOME</a></li>
+          <li><a href="{{ url_for('render_demo_page') }}">DEMO</a></li>
           <li><a href="#">ABOUT</a></li>
-          <li><a href="#">CONTACT</a></li>
+          <li><a href="{{ url_for('render_past_page') }}">PAST</a></li>
           <li><a href="https://emergency.uw.edu/?_gl=1*1vuj1l2*_ga*MjEwNjM0NTMyNS4xNjc1ODkzMTc1*_ga_3T65WK0BM8*MTY3ODE1MzAyOS43LjAuMTY3ODE1MzAzMy4wLjAuMA..">BLOG</a></li>
         </ul>
       </nav>
       <div id="elementContainer">
         <div id="formcontainer">
-          <form id="formtag" action="{{url_for('update_map')}}" method="POST">
-            <label for="text-input" class="text-label"
-              >Test New Data for Map:</label>
-            <textarea
-              id="test-input"
-              name="text-input"
-              placeholder="Enter in a UW Alert"
-            ></textarea>
-            <button type="submit" id="submitbutton">Beam Me Up!</button>
-          </form>
-          <button id="update_button">CHANGE</button>
+          <div id="alertcontainer">
+            <h2>Welcome to UW Alerts Map</h2>
+            <p>Select an alert to view additional information!</p>
+            
+          </div>
         </div>
         <div id="plotcontainer">
           <iframe
@@ -47,12 +41,36 @@
         </div>
       </div>
       <script>
+        /* Updating map html */
         var mapHtml = {{ map_html | safe | tojson}};
         var mapFrame = document.getElementById('map-frame');
         var mapFrameDoc = mapFrame.contentDocument || mapFrame.contentWindow.document;
         mapFrameDoc.open();
         mapFrameDoc.write(mapHtml);
         mapFrameDoc.close();
+      </script>
+      <script>
+        // document.addEventListener("DOMContentLoaded", function(){
+        /* Updating side panel */
+        var alertDesc = {{ alert_dict | safe | tojson}};
+        var alertFrame = document.getElementById('alertcontainer');
+        // alertFrame.innHTML
+        let alertHtml = '';
+        // console.log(typeof alertDesc);
+        // console.log(alertDesc)
+        var alertObj = JSON.parse(alertDesc);
+        localStorage.setItem("alertDescs", JSON.stringify(alertObj));
+        // // console.log(alertObj);
+        // for (let key in alertObj) {
+        //   // console.log(key + ': ' + alertObj[key]);
+        //   alertHtml += key + ': ' + alertObj[key];
+        // }
+        // alertFrame.innerHTML = alertHtml;
+        // });
+      </script>
+      <script>
+        console.log("TESTING:")
+        console.log(JSON.parse(localStorage.getItem("alertDescs"))["0"])
       </script>
 
       <script>
