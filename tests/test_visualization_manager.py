@@ -2,12 +2,14 @@
 Tests for visualization_manager.py
 """
 import unittest
-# from click import get_current_context
+import ast
 from datetime import datetime, timedelta
+
 import geopandas as gpd
 import pandas as pd
 import pandas.testing as pdt
 import numpy as np
+
 from visualization_manager.visualization_manager \
     import filter_geodf, get_folium_map, get_urgent_incidents
 
@@ -199,13 +201,45 @@ class TestFilterGeoDF(unittest.TestCase):
                 filter_geodf(gdf, lat=point[0], lon=point[1])
 
 
-# TODO: Create Tests
-# class TestGetFoliumMap(unittest.TestCase):
-#     """
-#     Tests methods for get_folium_map function
-#     in visualization_manager.py
-#     """
+class TestGetFoliumMap(unittest.TestCase):
+    """
+    Tests methods for get_folium_map function
+    in visualization_manager.py
+    """
 
+    # Smoke test
+    def test_smoke(self):
+        """
+        Smoke test for filter_geodf
+        """
+        flag = True
+        try:
+            alert_df = pd.read_csv('data/uw_alerts_clean.csv',
+                                   converters = {'geometry': ast.literal_eval}).head()
+            get_folium_map(alert_df)
+        except ValueError:
+            flag = False
+        self.assertTrue(flag)
+
+    # Edge case tests
+    def test_not_pandas_dataframe(self):
+        """
+        Edge case test to check that alert_df is a pandas dataframe
+        """
+        test_cases = ["String", {}, np.array([3, 2, 2]), 34]
+        for alert_df in test_cases:
+            with self.assertRaises(TypeError):
+                get_folium_map(alert_df)
+
+    def test_dataframe_has_necessary_columns(self):
+        """
+        Edge case test to check that alert_df has the necessary columns
+        """
+        alert_df = pd.read_csv('data/uw_alerts_clean.csv',
+                               converters = {'geometry': ast.literal_eval}).head().drop("geometry",
+                                                                                        axis = 1)
+        with self.assertRaises(ValueError):
+            get_folium_map(alert_df)
 
 if __name__ == '__main__':
     unittest.main()

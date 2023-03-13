@@ -1,15 +1,14 @@
 """
-Name: Visualization Manager 
-What it does: 
-- Renders an interactive street map visualization 
-    - highlights specific streets of interest 
-
-- Includes details of uw alert events 
-inputs: 
-- street: 
+Name: Visualization Manager
+What it does:
+- Renders an interactive street map visualization
+    - highlights specific streets of interest
+- Includes details of uw alert events
+inputs:
+- street:
 - alert_type:
-- description: 
-- time: 
+- description:
+- time:
 
 outputs:
 - interactive street visualization
@@ -162,7 +161,7 @@ def filter_geodf(gdf, lat, lon, max_distance=10):
     max_distance: int (default=10)
         The max distance of streets from the point
         in meters
-    
+
     Returns
     -------
     gdf : Geopandas dataframe
@@ -224,15 +223,16 @@ def get_folium_map(alert_df: pd.DataFrame):
     Parameters
     ----------
     alert_df : pandas DataFrame
-        Containing the urgent alerts as well as alert metadata
+        Containing our "database" of urgent alerts as well as alert metadata
         Relevant Columns:
-            - Incident Category
-            - Incident Alert
-            - geometry 
-            - Nearest Address to Incident
-            - Date
-            - Report Time
-    
+            - Incident Category: str - The type of incident derived from Chat GPT analysis
+            - Incident Alert: str - The incident alert derived from the UW Alerts blog
+            - geometry: dict
+                - The "location" key contains a coordinate pair value
+            - Nearest Address to Incident : str - The closest intersection to the incident
+                origin derived from Chat GPT analysis
+            - Date : str
+            - Report Time : str
     Returns
     -------
     m_html : str
@@ -251,7 +251,6 @@ def get_folium_map(alert_df: pd.DataFrame):
     gdf = gpd.read_file(udistrict_streets)
     # pylint: disable=line-too-long
     mapbox_api_key=os.getenv('MAPBOX_API_KEY')
-    # mapbox_api_key = 'pk.eyJ1IjoiZXZhbnlpcCIsImEiOiJjbGRxYnc3dXEwNWxxM25vNjRocHlsOHFyIn0.0H4RiKd8X94CeoXwEd4TgQ'
     tileset_id_str = "dark-v11"
     tilesize_pixels = "512"
     tile = f"https://api.mapbox.com/styles/v1/mapbox/{tileset_id_str}/tiles/{tilesize_pixels}/{{z}}/{{x}}/{{y}}@2x?access_token={mapbox_api_key}"
@@ -259,7 +258,6 @@ def get_folium_map(alert_df: pd.DataFrame):
                     zoom_start=15,
                     tiles = tile,
                     attr="Maptiler Dark")
-
     alert_coords = [list(loc["location"].values()) for loc in alert_df["geometry"]]
     alert_categories = list(alert_df["Incident Category"])
     alert_nearest_intersections = list(alert_df["Nearest Address to Incident"])
@@ -281,7 +279,6 @@ def get_folium_map(alert_df: pd.DataFrame):
 
         # Set a marker with an interactive popup
         iframe = folium.IFrame("<center><h4>" + str(alert_categories[i]) + "</h4><p style=\"font-family:Georgia, serif\">" + str(alert_nearest_intersections[i]) + "</p></center>")
-        popup = folium.Popup(iframe, min_width=200, max_width=250)
         marker = folium.Marker(
             coord,
             popup=popup,

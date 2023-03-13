@@ -41,11 +41,11 @@ def filter_seattle_streets():
     longitude_bounds = (-122.2980, -122.3230)
     latitude_bounds = (47.67657, 47.6499)
     # Filtering for udistrict
-    lon1_filt = (gdf['lon1'] > longitude_bounds[1])& (gdf['lon1'] <= longitude_bounds[0]) 
-    lon2_filt = (gdf['lon2'] > longitude_bounds[1])& (gdf['lon2'] <= longitude_bounds[0]) 
+    lon1_filt = (gdf['lon1'] > longitude_bounds[1])& (gdf['lon1'] <= longitude_bounds[0])
+    lon2_filt = (gdf['lon2'] > longitude_bounds[1])& (gdf['lon2'] <= longitude_bounds[0])
 
-    lat1_filt = (gdf['lat1'] > latitude_bounds[1])& (gdf['lat1'] <= latitude_bounds[0]) 
-    lat2_filt = (gdf['lat2'] > latitude_bounds[1])& (gdf['lat2'] <= latitude_bounds[0]) 
+    lat1_filt = (gdf['lat1'] > latitude_bounds[1])& (gdf['lat1'] <= latitude_bounds[0])
+    lat2_filt = (gdf['lat2'] > latitude_bounds[1])& (gdf['lat2'] <= latitude_bounds[0])
 
     udist_gdf = gdf[lon1_filt & lat1_filt & lon2_filt & lat2_filt]
 

@@ -1,5 +1,6 @@
 """
 Name: app.py
+Initializes a web application for UW Alerts Visualization
 A python module that contains all the server side functions that allow 
 for communication between the front end (html files) to the backend (.py files).
 It handles requests from the frontend to update the map with new information.
@@ -117,7 +118,6 @@ def update_map():
     openai.api_key = os.getenv('OPENAI_API_KEY')
     uw_alert_filepath='./data/uw_alerts_clean.csv'
     uw_alerts = pd.read_csv(uw_alert_filepath,index_col=False)
-    # last_alert=uw_alerts['Incident Alert'].values[0]
     new_data = request.form['text-input']
     buf = io.StringIO(new_data)
     gpt_output = parse_uw_alerts.prompt_gpt(buf.readlines(),return_alert_type=True)
