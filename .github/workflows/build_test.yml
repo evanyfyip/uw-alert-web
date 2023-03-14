@@ -62,8 +62,6 @@ jobs:
         with:
           # Use the environment name from your environment.yml file
           activate-environment: uw_alerts_env
-          # The name of the environment file you want conda to use
-          environment-file: environment.yml
           # Whether you want conda to automatically update the conda
           # version (helpful when some runners have old versions of
           # conda)
@@ -87,6 +85,10 @@ jobs:
       
       # If there are any other steps in order for your tests to
       # run successfully, you can add those steps here!
+
+      - name: Run setup.py
+        run: |
+          pip install -e .
 
       # Next step: run pylint. Anything less than 10/10 will fail.
       # - name: Lint with pylint
