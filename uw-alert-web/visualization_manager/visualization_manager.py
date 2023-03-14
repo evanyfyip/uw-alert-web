@@ -252,7 +252,7 @@ def get_folium_map(alert_df: pd.DataFrame):
                                 Incident Alert, Nearest Address to Incident, geometry""")
     # Display the U-District area
     dirname = os.path.dirname(__file__)
-    udistrict_streets = os.path.join(dirname, "../data/SeattleGISData/udistrict_streets.geojson")
+    udistrict_streets = os.path.join(dirname, "../../data/SeattleGISData/udistrict_streets.geojson")
     gdf = gpd.read_file(udistrict_streets)
     # pylint: disable=line-too-long
     mapbox_api_key=os.getenv('MAPBOX_API_KEY')
@@ -284,7 +284,11 @@ def get_folium_map(alert_df: pd.DataFrame):
         ).add_to(alert_map)
 
         # Set a marker with an interactive popup
-        iframe = folium.IFrame("<center><h4>" + str(alert_categories[i]) + "</h4><p style=\"font-family:Georgia, serif\">" + str(alert_nearest_intersections[i]) + "</p></center>")
+        iframe = folium.IFrame(
+            "<center><h3 style=\"font-family: 'Noto Sans', sans-serif;\">" + \
+            str(alert_categories[i]) + \
+            "</h3><p style=\"font-family: 'Noto Sans', sans-serif;\">" + \
+            str(alert_nearest_intersections[i]) + "</p></center>")
         popup = folium.Popup(iframe, min_width=200, max_width=250)
         marker = folium.Marker(
             coord,
