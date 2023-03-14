@@ -3,7 +3,6 @@ name: uw_alerts_env_3_10
 channels:
   - conda-forge
 dependencies:
-  - python=3.10
   - pyproj=3.4.1
   - folium=0.14.0
   - shapely=2.0.1
