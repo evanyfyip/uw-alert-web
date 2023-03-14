@@ -250,14 +250,12 @@ def get_folium_map(alert_df: pd.DataFrame):
         if col not in alert_df.columns:
             raise ValueError("""alert_df must have the following columns: Incident Category,
                                 Incident Alert, Nearest Address to Incident, geometry""")
-    
     # Display the U-District area
     dirname = os.path.dirname(__file__)
     udistrict_streets = os.path.join(dirname, "../data/SeattleGISData/udistrict_streets.geojson")
     gdf = gpd.read_file(udistrict_streets)
     # pylint: disable=line-too-long
     mapbox_api_key=os.getenv('MAPBOX_API_KEY')
-    # mapbox_api_key = 'pk.eyJ1IjoiZXZhbnlpcCIsImEiOiJjbGRxYnc3dXEwNWxxM25vNjRocHlsOHFyIn0.0H4RiKd8X94CeoXwEd4TgQ'
     tileset_id_str = "dark-v11"
     tilesize_pixels = "512"
     tile = f"https://api.mapbox.com/styles/v1/mapbox/{tileset_id_str}/tiles/{tilesize_pixels}/{{z}}/{{x}}/{{y}}@2x?access_token={mapbox_api_key}"

@@ -124,6 +124,8 @@ class TestGetUrgentAlerts(unittest.TestCase):
         test_data = pd.DataFrame(data, columns=cols)
         expected_df = pd.DataFrame(expected, columns=expected_cols)
         result = get_urgent_incidents(alerts_df=test_data, time_frame=4)
+        print(expected_df)
+        print(result)
         pdt.assert_frame_equal(expected_df, result)
 
     def test_no_urgent_incidents(self):
