@@ -1,14 +1,15 @@
 """
-Name: Visualization Manager
-What it does:
-- Renders an interactive street map visualization
-    - highlights specific streets of interest
-- Includes details of uw alert events
-inputs:
-- street:
+Name: Visualization Manager 
+What it does: 
+- Renders an interactive street map visualization 
+    - highlights specific streets of interest 
+
+- Includes details of uw alert events 
+inputs: 
+- street: 
 - alert_type:
-- description:
-- time:
+- description: 
+- time: 
 
 outputs:
 - interactive street visualization
@@ -47,7 +48,6 @@ def get_urgent_incidents(alerts_df, time_frame):
     urgent_incidents_df : Dataframe
         Pandas dataframe of the most urgent incidents
     """
-    print(alerts_df.columns)
     # Checking columns
     cols = ['Incident ID', 'Alert ID', 'Date', 'Report Time']
     for col in cols:
@@ -159,7 +159,7 @@ def filter_geodf(gdf, lat, lon, max_distance=10):
     max_distance: int (default=10)
         The max distance of streets from the point
         in meters
-
+    
     Returns
     -------
     gdf : Geopandas dataframe
@@ -221,16 +221,15 @@ def get_folium_map(alert_df: pd.DataFrame):
     Parameters
     ----------
     alert_df : pandas DataFrame
-        Containing our "database" of urgent alerts as well as alert metadata
+        Containing the urgent alerts as well as alert metadata
         Relevant Columns:
-            - Incident Category: str - The type of incident derived from Chat GPT analysis
-            - Incident Alert: str - The incident alert derived from the UW Alerts blog
-            - geometry: dict
-                - The "location" key contains a coordinate pair value
-            - Nearest Address to Incident : str - The closest intersection to the incident
-                origin derived from Chat GPT analysis
-            - Date : str
-            - Report Time : str
+            - Incident Category
+            - Incident Alert
+            - geometry 
+            - Nearest Address to Incident
+            - Date
+            - Report Time
+    
     Returns
     -------
     m_html : str
@@ -243,12 +242,22 @@ def get_folium_map(alert_df: pd.DataFrame):
                 i, alert_categories[i], alert_report_time[i], incident_messages[i], date[i]
             )
     """
+    # alert_df exceptions
+    # pylint: disable=line-too-long
+    if not isinstance(alert_df, pd.DataFrame):
+        raise TypeError("alert_df must be a pandas DataFrame")
+    for col in ["Incident Category", "Incident Alert", "Nearest Address to Incident", "geometry"]:
+        if col not in alert_df.columns:
+            raise ValueError("""alert_df must have the following columns: Incident Category,
+                                Incident Alert, Nearest Address to Incident, geometry""")
+    
     # Display the U-District area
     dirname = os.path.dirname(__file__)
     udistrict_streets = os.path.join(dirname, "../data/SeattleGISData/udistrict_streets.geojson")
     gdf = gpd.read_file(udistrict_streets)
     # pylint: disable=line-too-long
     mapbox_api_key=os.getenv('MAPBOX_API_KEY')
+    # mapbox_api_key = 'pk.eyJ1IjoiZXZhbnlpcCIsImEiOiJjbGRxYnc3dXEwNWxxM25vNjRocHlsOHFyIn0.0H4RiKd8X94CeoXwEd4TgQ'
     tileset_id_str = "dark-v11"
     tilesize_pixels = "512"
     tile = f"https://api.mapbox.com/styles/v1/mapbox/{tileset_id_str}/tiles/{tilesize_pixels}/{{z}}/{{x}}/{{y}}@2x?access_token={mapbox_api_key}"
@@ -256,6 +265,7 @@ def get_folium_map(alert_df: pd.DataFrame):
                     zoom_start=15,
                     tiles = tile,
                     attr="Maptiler Dark")
+
     alert_coords = [list(loc["location"].values()) for loc in alert_df["geometry"]]
     alert_categories = list(alert_df["Incident Category"])
     alert_nearest_intersections = list(alert_df["Nearest Address to Incident"])
@@ -277,6 +287,7 @@ def get_folium_map(alert_df: pd.DataFrame):
 
         # Set a marker with an interactive popup
         iframe = folium.IFrame("<center><h4>" + str(alert_categories[i]) + "</h4><p style=\"font-family:Georgia, serif\">" + str(alert_nearest_intersections[i]) + "</p></center>")
+        popup = folium.Popup(iframe, min_width=200, max_width=250)
         marker = folium.Marker(
             coord,
             popup=popup,
