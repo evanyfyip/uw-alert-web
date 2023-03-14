@@ -97,7 +97,7 @@ jobs:
       - name: Unit tests
         run: |
           cd uw-alert-web
-          coverage run --source=uw-alert-web --rcfile=.coverage.rc -m unittest discover
+          coverage run --rcfile=.coverage.rc -m unittest discover
           coverage report
           coverage lcov
       # Lastly: report code coverage to Coveralls.

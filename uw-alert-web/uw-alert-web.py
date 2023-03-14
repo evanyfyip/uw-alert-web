@@ -42,8 +42,6 @@ def render_home_page():
     """
     # sample alerts
     dirname = os.path.dirname(__file__)
-    print(type(dirname))
-    print(dirname)
     filename = os.path.join(dirname, "../data/uw_alerts_clean.csv")
     alert_df = pd.read_csv(filename, converters = {'geometry': ast.literal_eval})
     urgent_alerts_df = get_urgent_incidents(alert_df, time_frame=24*7)
@@ -153,7 +151,7 @@ def update_map():
     uw_alerts.to_csv(uw_alert_filepath,index=False)
     #send cleaned csv into viz manager
     dirname = os.path.dirname(__file__)
-    filename = os.path.join(dirname, "data/uw_alerts_clean.csv")
+    filename = os.path.join(dirname, "../data/uw_alerts_clean.csv")
     alert_df = pd.read_csv(filename, converters = {'geometry': ast.literal_eval})
     urgent_alerts_df = get_urgent_incidents(alert_df, time_frame=24)
     alert_map, marker_dict = get_folium_map(urgent_alerts_df)
@@ -177,7 +175,7 @@ def fully_update():
     #pylint: disable=no-else-return
     if output is not None:
         dirname = os.path.dirname(__file__)
-        filename = os.path.join(dirname, "data/uw_alerts_clean.csv")
+        filename = os.path.join(dirname, "../data/uw_alerts_clean.csv")
         alert_df = pd.read_csv(filename, converters = {'geometry': ast.literal_eval})
         urgent_alerts_df = get_urgent_incidents(alert_df, time_frame=24*7)
         alert_map, marker_dict = get_folium_map(urgent_alerts_df)

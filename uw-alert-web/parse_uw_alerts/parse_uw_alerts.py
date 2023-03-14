@@ -274,7 +274,7 @@ def clean_gpt_output(gpt_output='./data/uw_alerts_gpt.csv',
         result[0]['geometry'] for result in geocode_results]
     return gpt_data
 
-def scrape_uw_alerts(uw_alert_filepath='./data/uw_alerts_clean.csv'):
+def scrape_uw_alerts(uw_alert_filepath='../data/uw_alerts_clean.csv'):
     """
     Arguments:
         uw_alert_filepath - string containing filepath to clean UW Alerts data
