@@ -10,7 +10,7 @@
     />
   </head>
   <body>
-    <div class="container">
+    <div class="container" id="entire-frame">
       <nav>
         <div class="title">
           <p>UW Alerts Map</p>
@@ -18,7 +18,7 @@
         <ul>
           <li><a href="/">HOME</a></li>
           <li><a href="{{ url_for('render_demo_page') }}">DEMO</a></li>
-          <li><a href="#">ABOUT</a></li>
+          <li><a href="{{ url_for('about') }}">ABOUT</a></li>
           <li><a href="{{ url_for('render_past_page') }}">PAST</a></li>
           <li><a href="https://emergency.uw.edu/?_gl=1*1vuj1l2*_ga*MjEwNjM0NTMyNS4xNjc1ODkzMTc1*_ga_3T65WK0BM8*MTY3ODE1MzAyOS43LjAuMTY3ODE1MzAzMy4wLjAuMA..">BLOG</a></li>
         </ul>
@@ -50,53 +50,28 @@
         mapFrameDoc.close();
       </script>
       <script>
-        // document.addEventListener("DOMContentLoaded", function(){
-        /* Updating side panel */
         var alertDesc = {{ alert_dict | safe | tojson}};
         var alertFrame = document.getElementById('alertcontainer');
-        // alertFrame.innHTML
-        let alertHtml = '';
-        // console.log(typeof alertDesc);
-        // console.log(alertDesc)
+        // let alertHtml = '';
         var alertObj = JSON.parse(alertDesc);
         localStorage.setItem("alertDescs", JSON.stringify(alertObj));
-        // // console.log(alertObj);
-        // for (let key in alertObj) {
-        //   // console.log(key + ': ' + alertObj[key]);
-        //   alertHtml += key + ': ' + alertObj[key];
-        // }
-        // alertFrame.innerHTML = alertHtml;
-        // });
       </script>
       <script>
-        console.log("TESTING:")
-        console.log(JSON.parse(localStorage.getItem("alertDescs"))["0"])
-      </script>
-
-      <script>
-        $(document).ready(function () {
-          function changeMap() {
+        $(document).ready(function() {
+          function autoUpdateMap() {
             $.ajax({
-              url: "/update_map",
-              type: "GET",
-              dataType: "json",
-              success: function (data) {
-                var mapFrame = document.getElementById("map-frame");
-                var mapFrameDoc = mapFrame.contentDocument || mapFrame.contentWindow.document;
-                mapFrameDoc.open();
-                mapFrameDoc.write(data);
-                mapFrameDoc.close();
+              url: '/fully_update',
+              type: 'GET',
+              datatype: "html",
+              success: function(data) {
+                var bodyHtml = data.match(/<body.*?>([\s\S]*)<\/body>/i)[0];
+                $('body').html(bodyHtml);
               },
-              error: function (error) {
-                console.log("Error: " + error);
-              },
+              error: function(error){
+                console.log("passing");
+              }
             });
-          }
-
-          $("#submitbutton").on("click", function (event) {
-            event.preventDefault();
-            changeMap();
-          });
+          }setInterval(autoUpdateMap, 10000);
         });
       </script>
     </div>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="{{ url_for('static', filename='about.css') }}"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <nav>
+        <div class="title">
+          <p>UW Alerts Map</p>
+        </div>
+        <ul>
+          <li><a href="/">HOME</a></li>
+          <li><a href="{{ url_for('render_demo_page') }}">DEMO</a></li>
+          <li><a href="#">ABOUT</a></li>
+          <li><a href="{{ url_for('render_past_page') }}">PAST</a></li>
+          <li><a href="https://emergency.uw.edu/?_gl=1*1vuj1l2*_ga*MjEwNjM0NTMyNS4xNjc1ODkzMTc1*_ga_3T65WK0BM8*MTY3ODE1MzAyOS43LjAuMTY3ODE1MzAzMy4wLjAuMA..">BLOG</a></li>
+        </ul>
+      </nav>
+      <div id="contentContainer">
+        <div id="imageContainer">
+            <div class="image">
+                <img src="{{ url_for('static', filename='images/image2.jpeg') }}">
+                <p class="names">James Joko</p>
+                <p>jjoko@uw.edu</p>
+              </div>
+              <div class="image">
+                <img src="{{ url_for('static', filename='images/image4.jpeg') }}">
+                <p class="names">John Michael</p>
+                <p>jmic94@uw.edu</p>
+              </div>
+              <div class="image">
+                <img src="{{ url_for('static', filename='images/image1.jpeg') }}">
+                <p class="names">Mark Qiao</p>
+                <p>mtqiao@uw.edu</p>
+              </div>
+              <div class="image">
+                <img src="{{ url_for('static', filename='images/image3.jpeg') }}">
+                <p class="names">Evan Yip</p>
+                <p>eyfy@uw.edu</p>
+              </div>
+            </div>
+        <div id="aboutContainer">
+            <div class="about-text">
+                <p>This project was created by our DATA 515 group to produce an application
+                    that can automatically parse UW alerts from their blog page and visualize
+                    alerts on a map to better inform students and faculty of incidents that occur
+                    within the U-district area. 
+                </p>
+              </div>
+
+        </div>
+
+
+       
+      </div>
+    </div>
+  </body>
+</html>

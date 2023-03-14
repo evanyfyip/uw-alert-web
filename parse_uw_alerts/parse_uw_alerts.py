@@ -39,6 +39,7 @@ def prompt_gpt(lines, return_alert_type=False):
                 'Text: """')
     alert_chunk = '\n'.join(line for line in lines if not line.isspace())
     alert_chunk = alert_chunk.strip('\n')
+    alert_chunk = re.sub(r'\u2013|\u2014', '-', alert_chunk)
     gpt_prompt = '\n'.join([gpt_task, alert_chunk])
     gpt_prompt += '"""'
     tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
@@ -56,7 +57,7 @@ def prompt_gpt(lines, return_alert_type=False):
                     'Nearest Address to Incident', 'Incident Category',
                     'Incident Summary']
     gpt_table.columns = column_names
-    if re.match('(:)?--', gpt_table['Date'].values[0]):
+    if re.match(r'(:)?--', gpt_table['Date'].values[0]):
         gpt_table = gpt_table.iloc[1:]
     gpt_table.reset_index(inplace=True)
     gpt_table = gpt_table.loc[:, column_names]
@@ -304,6 +305,8 @@ def scrape_uw_alerts(uw_alert_filepath='./data/uw_alerts_clean.csv'):
         if re.search(r'^[A-z]+\s\d{1,2},\s\d{4}', para.text):
             newest_alert_list = [para.text for para in p_tags[:2]]
             break
+    newest_alert_list[1] = re.sub(r'\u2013|\u2014', '-', 
+                                  newest_alert_list[1])
     if not re.search(last_alert, newest_alert_list[1]):
         gpt_output = prompt_gpt(newest_alert_list, return_alert_type=True)
         gpt_table = generate_ids(uw_alerts, gpt_output[0], gpt_output[1])
@@ -326,4 +329,3 @@ if __name__ == "__main__":
     # parse_txt_data(FILEPATH, OUT_FILEPATH, file_start=FILE_START)
     # gpt_clean = clean_gpt_output(gmaps_client=gmaps)
     # gpt_clean.to_csv(CLEAN_FILEPATH, index=False)
-    # scraped_data = scrape_uw_alerts()
