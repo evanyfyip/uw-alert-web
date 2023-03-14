@@ -12,8 +12,11 @@ import pandas.testing as pdt
 import numpy as np
 
 #pylint: disable=import-error
-from visualization_manager.visualization_manager \
-    import filter_geodf, get_folium_map, get_urgent_incidents
+from visualization_manager.visualization_manager import \
+    filter_geodf, \
+    get_folium_map, \
+    get_urgent_incidents, \
+    attach_marker_ids
 
 class TestGetUrgentAlerts(unittest.TestCase):
     """
@@ -164,6 +167,14 @@ class TestGetUrgentAlerts(unittest.TestCase):
         with self.assertRaises(ValueError):
             get_urgent_incidents(alerts_df=test_data, time_frame=4)
 
+    def test_dataframe_input(self):
+        """
+        Testing get_urgent_incidents alerts_df
+        input parameter is type DataFrame
+        """
+        with self.assertRaises(TypeError):
+            get_urgent_incidents(alerts_df=[], time_frame=4)
+
 class TestFilterGeoDF(unittest.TestCase):
     """
     Tests methods for filter_geodf function
@@ -303,5 +314,87 @@ class TestGetFoliumMap(unittest.TestCase):
         with self.assertRaises(ValueError):
             get_folium_map(alert_df)
 
+class TestAttachMarkerIDs(unittest.TestCase):
+    """
+    Tests methods for attach_marker_ids function
+    in visualization_manager.py
+    """
+    # oneshot test
+    def test_simple_html(self):
+        """
+        Tests the attach_marker_id function
+        for a single marker case where we
+        need to update the html to include a marker
+        id and javascript onclick functionalities.
+        """
+        self.maxDiff = None
+        m_html = """
+        function geo_json_66a89e6bf89424e72991ded6eb5bac69_add (data) {
+            geo_json_66a89e6bf89424e72991ded6eb5bac69
+                .addData(data)
+                .addTo(choropleth_5961c55f453556107abef4283990ea7a);
+        }
+            geo_json_66a89e6bf89424e72991ded6eb5bac69_add({"bbox": [NaN, NaN, NaN, NaN], "features": [], "type": "FeatureCollection"});
+
+        
+    
+            var marker_83890b04aaf785c57736be66c43231bb = L.marker(
+                [47.6604329, -122.3115365],
+                {}
+            ).addTo(map_8986a6e632750fefa0097972e041860a);
+        
+        """
+        marker_dict = {
+            'map_id': "map_8986a6e632750fefa0097972e041860a",
+            'marker_83890b04aaf785c57736be66c43231bb': (
+                2, "Stabbing", "10:03:00", 
+                ("UPDATE (10:03 a.m.): A stabbing investigation is ongoing",
+                "ORIGINAL POST: Stabbing occurred"),
+                "9/4/18"
+            )
+        }
+        expected_html = """
+        function geo_json_66a89e6bf89424e72991ded6eb5bac69_add (data) {
+            geo_json_66a89e6bf89424e72991ded6eb5bac69
+                .addData(data)
+                .addTo(choropleth_5961c55f453556107abef4283990ea7a);
+        }
+            geo_json_66a89e6bf89424e72991ded6eb5bac69_add({"bbox": [NaN, NaN, NaN, NaN], "features": [], "type": "FeatureCollection"});
+
+        
+    
+            var marker_83890b04aaf785c57736be66c43231bb = L.marker(
+                [47.6604329, -122.3115365],
+                {id: 2}
+            ).addTo(map_8986a6e632750fefa0097972e041860a);
+        
+            marker_83890b04aaf785c57736be66c43231bb.on('click', function() {
+            const markerId = this.options.id;
+            let alertObj = JSON.parse(localStorage.getItem("alertDescs"));
+            // Get a reference to the element in the parent document
+            var alertFrame = parent.document.getElementById('alertcontainer');
+            var htmlString = `
+            
+            <h2>Stabbing - 9/4/18 10:03 AM</h2><br>
+    
+            <p>UPDATE (10:03 a.m.): A stabbing investigation is ongoing</p><br>
+            
+            <div style="background-color: #2C2C2C; color: #2C2C2C; height: 2px; width: 100%; margin: 0;"></div><br>
+            <p>ORIGINAL POST: Stabbing occurred</p><br>
+            
+            `;
+            alertFrame.innerHTML = htmlString
+            });\n            \n        \n"""
+        expected_marker_dict = {
+            '2': (
+                "Stabbing", "10:03:00", 
+                ("UPDATE (10:03 a.m.): A stabbing investigation is ongoing",
+                "ORIGINAL POST: Stabbing occurred"),
+                "9/4/18"
+            )
+        }
+        updated_html, reindexed_marker_dict = attach_marker_ids(m_html, marker_dict)
+        self.assertEqual(expected_html, updated_html)
+        self.assertEqual(expected_marker_dict, reindexed_marker_dict)
 if __name__ == '__main__':
     unittest.main()
