@@ -96,7 +96,8 @@ jobs:
       # Next step: run the unit tests with code coverage.
       - name: Unit tests
         run: |
-          coverage run -m unittest discover
+          cd uw-alerts-web
+          coverage run --source=uw-alert-web --rcfile=.coverage.rc -m unittest discover
           coverage report
           coverage lcov
       # Lastly: report code coverage to Coveralls.
@@ -105,7 +106,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           base-path: uw-alert-web
-          path-to-lcov: ${{ github.workspace }}/coverage.lcov
+          path-to-lcov: uw-alert-web/coverage.lcov
           # The following two options are needed for "parallel"
           # runs - ie if you have a matrix of python versions.
           # This holds off on reporting code coverage to

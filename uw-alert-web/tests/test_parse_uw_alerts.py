@@ -4,7 +4,7 @@ Tests for parse_uw_alerts.py
 import os
 import unittest
 import pandas as pd
-from ..parse_uw_alerts.parse_uw_alerts import (
+from parse_uw_alerts.parse_uw_alerts import (
     prompt_gpt,
     generate_ids,
     parse_txt_data,

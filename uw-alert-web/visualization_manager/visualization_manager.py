@@ -84,6 +84,8 @@ def get_urgent_incidents(alerts_df, time_frame):
 
     urgent_alerts_df = urgent_alerts_df.drop(columns='date')
 
+
+
     # No urgent alerts
     if len(urgent_alerts_df) == 0:
         return urgent_alerts_df

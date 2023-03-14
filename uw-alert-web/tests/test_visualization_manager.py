@@ -11,7 +11,7 @@ import pandas as pd
 import pandas.testing as pdt
 import numpy as np
 
-from ..visualization_manager.visualization_manager \
+from visualization_manager.visualization_manager \
     import filter_geodf, get_folium_map, get_urgent_incidents
 
 class TestGetUrgentAlerts(unittest.TestCase):
@@ -107,7 +107,7 @@ class TestGetUrgentAlerts(unittest.TestCase):
             ["3", "2", (today - timedelta(hours=6)).strftime('%m/%d/%Y'),
                 (today - timedelta(hours=6)).strftime("%H:%M"),
                 "Original Post", None, None, None],
-            ["2", "4", (today - timedelta(hours=3)).strftime('%m/%d/%Y'), None,
+            ["2", "4", today.strftime('%m/%d/%Y'), None,
                 "Test Alert", None, None, None],
             ["1", "1", two_days_ago.strftime('%m/%d/%Y'), two_days_ago.strftime("%H:%M"),
                 "Test Alert", None, None, None]
@@ -121,7 +121,7 @@ class TestGetUrgentAlerts(unittest.TestCase):
         expected = [
             [None, ("Update 3", "Update 2", "Update 1", "Original Post"), None,
                 today.strftime('%m/%d/%Y'), today.strftime("%H:%M"), None],
-            [None, ("Test Alert",), None, (today - timedelta(hours=3)).strftime('%m/%d/%Y'),
+            [None, ("Test Alert",), None, today.strftime('%m/%d/%Y'),
                 None, None]
         ]
         test_data = pd.DataFrame(data, columns=cols)
