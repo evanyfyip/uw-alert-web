@@ -1,0 +1,1 @@
+web: gunicorn uw-alert-web.uw-alert-web:app
