@@ -31,8 +31,12 @@ The following instructions are to be performed in a command line interface from 
 - conda env create --name uw_alerts_env
 - conda activate uw_alerts_env
 - pip install -e .
-- python uw-alert-web\uw-alert-web.py
+- cd uw-alert-web
+- flask --app=uw-alert-web run
 
-Our app also requires a .env file in the root directory containing API keys to the services we use: OpenAI, Google Maps, and Mapbox.
+Our app also requires a .env file in the root directory containing API keys to the services we use. It should look like the following:\
+OPENAI_API_KEY='[INSERT YOUR KEY HERE]'\
+GOOGLE_MAPS_API_KEY='[INSERT YOUR KEY HERE]'\
+MAPBOX_API_KEY='[INSERT YOUR KEY HERE]'
 
 The app will now be running on the URL: http://127.0.0.1:5000
