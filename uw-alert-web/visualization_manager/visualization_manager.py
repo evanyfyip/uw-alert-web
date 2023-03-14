@@ -285,9 +285,9 @@ def get_folium_map(alert_df: pd.DataFrame):
 
         # Set a marker with an interactive popup
         iframe = folium.IFrame(
-            "<center><h4 style=\"font-family: 'Noto Sans', sans-serif; padding-bottom: 2;\">" + \
+            "<center><h4 style=\"font-family: 'Noto Sans', sans-serif; margin-bottom:0;\">" + \
             str(alert_categories[i]) + \
-            "</h4><p style=\"font-family: 'Noto Sans', sans-serif;\">" + \
+            "</h4><p style=\"font-family: 'Noto Sans', sans-serif; margin-top:4;\">" + \
             str(alert_nearest_intersections[i]) + "</p></center>",
             ratio="40%")
         popup = folium.Popup(iframe, min_width=200, max_width=250)
