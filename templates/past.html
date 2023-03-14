@@ -25,15 +25,10 @@
       </nav>
       <div id="elementContainer">
         <div id="formcontainer">
-          <form id="formtag" action="{{url_for('update_map')}}" method="POST">
-            <label for="text-input" class="text-label">Test New Data for Map:</label>
-            <textarea id="test-input" name="text-input" placeholder="Enter in a UW Alert"></textarea>
-            <button type="submit" id="submitbutton">Beam Me Up!</button>
-          </form>
-          <div style="height: 10%;"></div>
-          <div id="alertcontainer" style="height: 35%;">
+          <div id="alertcontainer">
             <h2>Welcome to UW Alerts Map</h2>
             <p>Select an alert to view additional information!</p>
+            
           </div>
         </div>
         <div id="plotcontainer">
@@ -46,6 +41,7 @@
         </div>
       </div>
       <script>
+        /* Updating map html */
         var mapHtml = {{ map_html | safe | tojson}};
         var mapFrame = document.getElementById('map-frame');
         var mapFrameDoc = mapFrame.contentDocument || mapFrame.contentWindow.document;
@@ -53,18 +49,40 @@
         mapFrameDoc.write(mapHtml);
         mapFrameDoc.close();
       </script>
+      <script>
+        // document.addEventListener("DOMContentLoaded", function(){
+        /* Updating side panel */
+        var alertDesc = {{ alert_dict | safe | tojson}};
+        var alertFrame = document.getElementById('alertcontainer');
+        // alertFrame.innHTML
+        let alertHtml = '';
+        // console.log(typeof alertDesc);
+        // console.log(alertDesc)
+        var alertObj = JSON.parse(alertDesc);
+        localStorage.setItem("alertDescs", JSON.stringify(alertObj));
+        // // console.log(alertObj);
+        // for (let key in alertObj) {
+        //   // console.log(key + ': ' + alertObj[key]);
+        //   alertHtml += key + ': ' + alertObj[key];
+        // }
+        // alertFrame.innerHTML = alertHtml;
+        // });
+      </script>
+      <script>
+        console.log("TESTING:")
+        console.log(JSON.parse(localStorage.getItem("alertDescs"))["0"])
+      </script>
 
       <script>
         $(document).ready(function () {
           function changeMap() {
             $.ajax({
-              url: "/change_map",
+              url: "/update_map",
               type: "GET",
-              dataType: "html",
+              dataType: "json",
               success: function (data) {
                 var mapFrame = document.getElementById("map-frame");
-                var mapFrameDoc =
-                mapFrame.contentDocument || mapFrame.contentWindow.document;
+                var mapFrameDoc = mapFrame.contentDocument || mapFrame.contentWindow.document;
                 mapFrameDoc.open();
                 mapFrameDoc.write(data);
                 mapFrameDoc.close();
@@ -75,7 +93,7 @@
             });
           }
 
-          $("#update_button").on("click", function (event) {
+          $("#submitbutton").on("click", function (event) {
             event.preventDefault();
             changeMap();
           });

@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import requests
 import re
 
+
 def scrape_uw_alerts():
     prev_alert_list = ['no alerts']
     newest_alert_list = []

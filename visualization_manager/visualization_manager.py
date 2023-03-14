@@ -1,14 +1,15 @@
 """
-Name: Visualization Manager
-What it does:
-- Renders an interactive street map visualization
-    - highlights specific streets of interest
-- Includes details of uw alert events
-inputs:
-- street:
+Name: Visualization Manager 
+What it does: 
+- Renders an interactive street map visualization 
+    - highlights specific streets of interest 
+
+- Includes details of uw alert events 
+inputs: 
+- street: 
 - alert_type:
-- description:
-- time:
+- description: 
+- time: 
 
 outputs:
 - interactive street visualization
@@ -16,6 +17,7 @@ outputs:
 
 from datetime import datetime, timedelta
 import os
+import re
 import pyproj
 import folium
 from folium.plugins import HeatMap
@@ -24,6 +26,7 @@ import geopandas as gpd
 from shapely.geometry import Point
 from shapely.ops import nearest_points, transform
 
+# pylint: disable=too-many-locals
 def get_urgent_incidents(alerts_df, time_frame):
     """
     Retrieves and filters the uw_alerts_clean.csv
@@ -31,7 +34,14 @@ def get_urgent_incidents(alerts_df, time_frame):
 
     Parameters
     ----------
-    time_frame
+    alerts_df: pd.DataFrame
+        Pandas dataframe that contains columns
+        ['Incident ID', 'Alert ID', 'Date', 'Report Time'].
+        Result of reading in data/uw_alerts_clean.csv
+    time_frame: int
+        The time_frame cutoff in hours that specifies
+        the number of hours before the current time to
+        label alerts as 'urgent'.
 
     Returns
     -------
@@ -74,7 +84,61 @@ def get_urgent_incidents(alerts_df, time_frame):
 
     urgent_alerts_df = urgent_alerts_df.drop(columns='date')
 
-    return urgent_alerts_df
+    # No urgent alerts
+    if len(urgent_alerts_df) == 0:
+        return urgent_alerts_df
+    # Step 5: Transform and filter the dataframe to only include the most
+    # recent alert of each incident
+    def combine_text(group):
+        """
+        Helper function to extract and combine
+        Incident Alert column of the given group
+        into a single row.
+
+        Parameters
+        ----------
+        group : DataFrameGroupBy
+            A collection of pandas dataframes
+            where each dataframe is a single group
+            with a unique Incident ID
+        Returns
+        -------
+        row : dict
+            A dictionary of the new values for the grouped
+            dataframe
+        """
+        incident_df = group[1]
+        col_names = ['Incident ID', 'Alert ID', 'Incident Alert']
+        incident_df = incident_df.sort_values(['Alert ID'], ascending=False)
+        incident_id_value  = incident_df['Incident ID'].iloc[0]
+        alert_id_value  = incident_df['Alert ID'].iloc[0]
+        row = {
+            col_names[0]: incident_id_value,
+            col_names[1]: alert_id_value,
+            col_names[2]: tuple(incident_df['Incident Alert'])
+        }
+        return row
+
+    groups = urgent_alerts_df[['Incident ID', 'Alert ID', 'Incident Alert']] \
+        .groupby('Incident ID', as_index=False)
+
+    data_list = []
+    for group in groups:
+        row = combine_text(group)
+        data_list.append(row)
+
+    incident_messages_df = pd.DataFrame(data_list)
+    merged_df = pd.merge(urgent_alerts_df, incident_messages_df, how='right', on='Alert ID')
+    merged_df['Incident Alert'] = merged_df['Incident Alert_y']
+    merged_df = merged_df[
+        ['Incident Category',
+        'Incident Alert',
+        'Nearest Address to Incident',
+        'Date',
+        'Report Time',
+        'geometry']
+        ]
+    return merged_df
 
 
 def filter_geodf(gdf, lat, lon, max_distance=10):
@@ -95,7 +159,7 @@ def filter_geodf(gdf, lat, lon, max_distance=10):
     max_distance: int (default=10)
         The max distance of streets from the point
         in meters
-
+    
     Returns
     -------
     gdf : Geopandas dataframe
@@ -149,25 +213,34 @@ def filter_geodf(gdf, lat, lon, max_distance=10):
 
     return gdf
 
-def get_folium_map(alert_df):
+# pylint: disable=too-many-locals
+def get_folium_map(alert_df: pd.DataFrame):
     """
     Given information about alerts, return a rendered html leaflet map of the U-district area.
 
     Parameters
     ----------
-    alert_df : pandas DataFrame containing our "database" of alerts
+    alert_df : pandas DataFrame
+        Containing the urgent alerts as well as alert metadata
         Relevant Columns:
-            - Nearest Address to Incident: str - The closest intersection to the incident
-                origin derived from Chat GPT analysis
-            - Incident Category: str - The type of incident derived from Chat GPT analysis
-            - Incident Alert: str - The incident alert derived from the UW Alerts blog
-            - Geometry: dict
-                - The "location" key contains a coordinate pair value
-
+            - Incident Category
+            - Incident Alert
+            - geometry 
+            - Nearest Address to Incident
+            - Date
+            - Report Time
+    
     Returns
     -------
     m_html : str
         A rendered html leaflet map to display on the web application.
+    marker_dict: dict
+        A dictionary of the marker metadata and map id. 
+        example:
+            marker_dict['map_id'] = `map folium object id`
+            marker_dict[marker_id] = (
+                i, alert_categories[i], alert_report_time[i], incident_messages[i], date[i]
+            )
     """
     # alert_df exceptions
     # pylint: disable=line-too-long
@@ -177,19 +250,29 @@ def get_folium_map(alert_df):
         if col not in alert_df.columns:
             raise ValueError("""alert_df must have the following columns: Incident Category,
                                 Incident Alert, Nearest Address to Incident, geometry""")
-
     # Display the U-District area
-    gdf = gpd.read_file(os.path.join(os.path.dirname(__file__), "../data/SeattleGISData/udistrict_streets.geojson"))
-    mapbox_api_key = 'pk.eyJ1IjoiZXZhbnlpcCIsImEiOiJjbGRxYnc3dXEwNWxxM25vNjRocHlsOHFyIn0.0H4RiKd8X94CeoXwEd4TgQ'
-    html_map = folium.Map(location=[47.66, -122.32],
-                          zoom_start=15,
-                          tiles = f"https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/512/{{z}}/{{x}}/{{y}}@2x?access_token={mapbox_api_key}",
-                          attr="Maptiler Dark")
+    dirname = os.path.dirname(__file__)
+    udistrict_streets = os.path.join(dirname, "../data/SeattleGISData/udistrict_streets.geojson")
+    gdf = gpd.read_file(udistrict_streets)
+    # pylint: disable=line-too-long
+    mapbox_api_key=os.getenv('MAPBOX_API_KEY')
+    tileset_id_str = "dark-v11"
+    tilesize_pixels = "512"
+    tile = f"https://api.mapbox.com/styles/v1/mapbox/{tileset_id_str}/tiles/{tilesize_pixels}/{{z}}/{{x}}/{{y}}@2x?access_token={mapbox_api_key}"
+    alert_map = folium.Map(location=[47.66, -122.32],
+                    zoom_start=15,
+                    tiles = tile,
+                    attr="Maptiler Dark")
 
     alert_coords = [list(loc["location"].values()) for loc in alert_df["geometry"]]
     alert_categories = list(alert_df["Incident Category"])
     alert_nearest_intersections = list(alert_df["Nearest Address to Incident"])
+    incident_messages = list(alert_df['Incident Alert'])
+    date = list(alert_df['Date'])
+    alert_report_time = list(alert_df["Report Time"])
 
+    marker_dict = {}
+    # Plotting each alert on the map
     for i, coord in enumerate(alert_coords):
         # Display streets that are close to the alert
         filtered_streets = filter_geodf(gdf, coord[0], coord[1])
@@ -198,18 +281,169 @@ def get_folium_map(alert_df):
             line_weight=3,
             line_color='red',
             line_opacity=0.5
-        ).add_to(html_map)
+        ).add_to(alert_map)
 
         # Set a marker with an interactive popup
         iframe = folium.IFrame("<center><h4>" + str(alert_categories[i]) + "</h4><p style=\"font-family:Georgia, serif\">" + str(alert_nearest_intersections[i]) + "</p></center>")
+        popup = folium.Popup(iframe, min_width=200, max_width=250)
         marker = folium.Marker(
             coord,
-            popup=folium.Popup(iframe, min_width=200, max_width=250),
-            icon=folium.Icon(color = "red", icon="circle-exclamation", prefix="fa")
+            popup=popup,
+            icon=folium.Icon(color = "red", icon="circle-exclamation", prefix="fa"),
         )
-        marker.add_to(html_map)
+        # Add id to marker element
+        marker.add_child(folium.Element(f'<div id="my_marker_{i}">My Marker</div>'))
+
+        # Add marker to map
+        marker.add_to(alert_map)
+
+        # store marker metadata in marker_dict
+        marker_id = marker.get_name()
+        marker_dict[marker_id] = (i, alert_categories[i], alert_report_time[i], incident_messages[i], date[i])
+
+    # Store the map_id in marker_dict
+    marker_dict['map_id'] = alert_map.get_name()
 
     # Create a heatmap layer for each alert
-    HeatMap(alert_coords, radius=10, gradient = {0: 'blue', 0.5: 'red'}).add_to(html_map)
+    HeatMap(alert_coords, radius=10, gradient = {0: 'lime', 0.5: 'red'}).add_to(alert_map)
+    m_html = alert_map.get_root().render()
+    return (m_html, marker_dict)
 
-    return html_map.get_root().render()
+
+def attach_marker_ids(m_html, marker_dict):
+    """
+    Takes in m_html and marker_dict output from
+    get_folium map and updates the html to include
+    onclick javascript methods to send marker_dict
+    metadata to the alertcontainer.
+
+    Parameters
+    ----------
+    m_html : str
+        A rendered html leaflet map to display on the web application.
+   marker_dict: dict
+        A dictionary of the marker metadata and map id. 
+        example:
+            marker_dict['map_id'] = `map folium object id`
+            marker_dict[marker_id] = (
+                i, alert_categories[i], alert_report_time[i], incident_messages[i], date[i]
+        )
+
+    Returns
+    -------
+    updated_html : str
+        A rendered html leaflet map with javascript methods that respond to
+        on click interactions
+    reindexed_marker_dict : dict
+        A reindexed marker_dict where the keys are now the first element `i` 
+        for each marker instead of the marker id.
+        example:
+            marker_dict[i] = (
+                alert_categories[i], alert_report_time[i], incident_messages[i], date[i]
+        )
+    """
+    updated_html = ''
+    skip = 0
+    lines = m_html.split('\n')
+    for line in lines:
+        if re.search(r'marker_.*=\sL.marker\(', line):
+            marker_id = re.search(r"(marker_.*)\s=", line).group(1)
+            # Generating script after marker found
+            script = update_marker_definition(marker_id, marker_dict)
+            updated_html += line + '\n'
+            skip = 1
+        elif skip == 1:
+            updated_html += line
+            updated_html += script
+            skip = 3
+        # Skipping the next two lines
+        elif skip == 3:
+            skip = 2
+        elif skip == 2:
+            skip = 0
+        else:
+            updated_html += line + '\n'
+
+    # Reupdate marker_dict to change the keys
+    reindexed_marker_dict = {}
+    for key in marker_dict.keys():
+        if key != 'map_id':
+            reindexed_marker_dict[str(marker_dict[key][0])] = (
+                marker_dict[key][1],
+                marker_dict[key][2],
+                marker_dict[key][3],
+                marker_dict[key][4]
+            )
+    return updated_html, reindexed_marker_dict
+
+
+def update_marker_definition(marker_id, marker_dict):
+    """
+    Takes in a given marker id and marker dict
+    with the marker metadata and returns a 
+    html and javascript string that updates each
+    marker with an id and onclick functionality
+
+    Parameters
+    ----------
+    marker_id : int
+        An integer representing the unique marker id
+    marker_dict: dict
+        A reindexed marker_dict where the keys are now the first element `i` 
+        for each marker instead of the marker id.
+        example:
+            marker_dict[i] = (
+                alert_categories[i], alert_report_time[i], incident_messages[i], date[i]
+        )
+
+    Returns
+    -------
+    new_script : str
+        A string of html and javascript that updates each
+        marker in the original map_html to include an id
+        and onclick functionality.
+    """
+    # Extracting metadata
+    element_id, category, report_time, incident_messages, date = marker_dict[marker_id]
+    map_id = marker_dict['map_id']
+    # Building html alert for left panel
+    if report_time is None:
+        report_time_str = 'No report time found'
+    else:
+        # Convert time string to datetime object
+        time_obj = datetime.strptime(report_time, "%H:%M:%S")
+
+        # Convert datetime object to non-military format string
+        hour = str(int(datetime.strftime(time_obj, "%I")))
+        report_time_str = hour + datetime.strftime(time_obj, ":%M %p")
+
+    html_string = f"""
+            <h2>{category} - {date} {report_time_str}</h2><br>
+    """
+    for i, alert_message in enumerate(incident_messages):
+        if i == 0:
+            alert_message_html = f"""
+            <p>{alert_message}</p><br>
+            """
+        else:
+            alert_message_html = f"""
+            <div style="background-color: #2C2C2C; color: #2C2C2C; height: 2px; width: 100%; margin: 0;"></div><br>
+            <p>{alert_message}</p><br>
+            """
+        html_string += alert_message_html
+    new_script = f"""
+                {'{id:'} {element_id}{'}'}
+            ).addTo({map_id});
+        
+            {marker_id}.on('click', function() {'{'}
+            const markerId = this.options.id;
+            let alertObj = JSON.parse(localStorage.getItem("alertDescs"));
+            // Get a reference to the element in the parent document
+            var alertFrame = parent.document.getElementById('alertcontainer');
+            var htmlString = `
+            {html_string}
+            `;
+            alertFrame.innerHTML = htmlString
+            {'}'});
+    """
+    return new_script

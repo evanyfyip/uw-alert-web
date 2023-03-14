@@ -41,14 +41,12 @@ def prompt_gpt(lines, return_alert_type=False):
     alert_chunk = alert_chunk.strip('\n')
     gpt_prompt = '\n'.join([gpt_task, alert_chunk])
     gpt_prompt += '"""'
-    print(gpt_prompt)
     tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
     n_tokens = len(tokenizer(gpt_prompt)['input_ids'])
     response = openai.Completion.create(
         engine="text-davinci-003",
         prompt=gpt_prompt,
         max_tokens=4097-n_tokens)
-    print(response['choices'][0]['text'])
     gpt_table = pd.read_table(
         io.StringIO(response['choices'][0]['text']), sep='|', \
             skipinitialspace=True, header=0, index_col=False)
@@ -198,14 +196,12 @@ def parse_txt_data(filepath, out_filepath, file_start=0):
         last_event_index = None
         for i, line in enumerate(lines[file_start:]):
             if (i + file_start) == (len(lines) - 1):
-                print((last_event_index, i+file_start))
                 generate_csv(out_filepath,
                              [last_date]+lines[last_event_index:])
             date_check = re.match(r'^[A-z]+\s\d{1,2},\s\d{4}\n$', line)
             if date_check:
                 if last_event is not None:
                     alert_end = i + file_start
-                    print((last_event_index, alert_end))
                     generate_csv(
                         out_filepath,
                         [last_date]+lines[last_event_index:alert_end])
@@ -217,7 +213,6 @@ def parse_txt_data(filepath, out_filepath, file_start=0):
                 r'(\[)?original (post)?', line, re.IGNORECASE):
                 alert_end = i + file_start
                 if last_event == 'original/update':
-                    print((last_event_index, alert_end))
                     generate_csv(
                         out_filepath,
                         [last_date]+lines[last_event_index:alert_end])
