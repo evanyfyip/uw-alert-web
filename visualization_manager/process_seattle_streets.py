@@ -51,7 +51,7 @@ def filter_seattle_streets():
 
     relevant_cols = ['UNITDESC', 'STNAME_ORD', 'XSTRLO', 'XSTRHI', 'INTRLO', 'INTRHI', 'geometry']
     udist_gdf_sub = udist_gdf[relevant_cols]
-    udist_gdf_sub.to_file('../data/SeattleGISData/udistrict_streets.geojson', driver='GeoJSON')
+    udist_gdf_sub.to_file('../data/SeattleGISData/udistrict_streets_2.geojson', driver='GeoJSON')
 
 if __name__ == '__main__':
     filter_seattle_streets()

@@ -42,46 +42,89 @@ class TestGetUrgentAlerts(unittest.TestCase):
         """
         today = datetime.today()
         two_days_ago = today - timedelta(days=2)
-        cols = ["Alert ID", "Incident ID", "Date", "Report Time", "Keep"]
-        data = [["1", "1", two_days_ago.strftime('%m/%d/%Y'),
-                    two_days_ago.strftime("%H:%M"), False],
-                ["2", "2", today.strftime('%m/%d/%Y'), today.strftime("%H:%M"), True],
-                ["3", "2", (today - timedelta(hours=3)).strftime('%m/%d/%Y'),
-                    (today - timedelta(hours=3)).strftime("%H:%M"), True],
-                ["4", "2", (today - timedelta(hours=5)).strftime('%m/%d/%Y'),
-                    (today - timedelta(hours=5)).strftime("%H:%M"), True],
-                ["5", "2", (today - timedelta(hours=6)).strftime('%m/%d/%Y'),
-                    (today - timedelta(hours=6)).strftime("%H:%M"), True],
-                ["6", "4", (today - timedelta(hours=10)).strftime('%m/%d/%Y'),
-                    (today - timedelta(hours=10)).strftime("%H:%M"), False]]
+        cols = ["Alert ID", "Incident ID",
+                "Date", "Report Time", 
+                "Incident Alert", "Incident Category",
+                "Nearest Address to Incident", "geometry"]
+        data = [
+            ["6", "2", today.strftime('%m/%d/%Y'), today.strftime("%H:%M"),
+                "Update 3", None, None, None],
+            ["5", "2", (today - timedelta(hours=3)).strftime('%m/%d/%Y'),
+                (today - timedelta(hours=3)).strftime("%H:%M"),
+                "Update 2", None, None, None],
+            ["4", "2", (today - timedelta(hours=5)).strftime('%m/%d/%Y'),
+                (today - timedelta(hours=5)).strftime("%H:%M"),
+                "Update 1", None, None, None],
+            ["3", "2", (today - timedelta(hours=6)).strftime('%m/%d/%Y'),
+                (today - timedelta(hours=6)).strftime("%H:%M"),
+                "Original Post", None, None, None],
+            ["2", "4", (today - timedelta(hours=10)).strftime('%m/%d/%Y'),
+                (today - timedelta(hours=10)).strftime("%H:%M"),
+                "Test Alert", None, None, None],
+            ["1", "1", two_days_ago.strftime('%m/%d/%Y'), two_days_ago.strftime("%H:%M"),
+                "Test Alert", None, None, None]
+        ]
+
+        expected_cols = [
+            'Incident Category', 'Incident Alert',
+            'Nearest Address to Incident', 'Date',
+            'Report Time', 'geometry'
+        ]
+        expected = [[
+            None, ("Update 3", "Update 2", "Update 1", "Original Post"), None,
+            today.strftime('%m/%d/%Y'), today.strftime("%H:%M"), None
+        ]]
         test_data = pd.DataFrame(data, columns=cols)
-        expected = test_data[test_data['Keep']]
+        expected_df = pd.DataFrame(expected, columns=expected_cols)
         result = get_urgent_incidents(alerts_df=test_data, time_frame=4)
-        pdt.assert_frame_equal(expected, result)
+        pdt.assert_frame_equal(expected_df, result)
 
     def test_missing_report_times(self):
         """
-        get_urgent incidents should filter based
+        get_urgent_incidents should filter based
         on report time and date first, but if there
         is no report time, it should take any incidents
-        that occured that day."""
+        that occured that day.
+        """
         today = datetime.today()
         two_days_ago = today - timedelta(days=2)
-        cols = ["Alert ID", "Incident ID", "Date", "Report Time", "Keep"]
-        data = [["1", "1", two_days_ago.strftime('%m/%d/%Y'),
-                    two_days_ago.strftime("%H:%M"), False],
-                ["2", "2", today.strftime('%m/%d/%Y'), today.strftime("%H:%M"), True],
-                ["3", "2", (today - timedelta(hours=3)).strftime('%m/%d/%Y'),
-                    (today - timedelta(hours=3)).strftime("%H:%M"), True],
-                ["4", "2", (today - timedelta(hours=5)).strftime('%m/%d/%Y'),
-                    (today - timedelta(hours=5)).strftime("%H:%M"), True],
-                ["5", "2", (today - timedelta(hours=6)).strftime('%m/%d/%Y'),
-                    (today - timedelta(hours=6)).strftime("%H:%M"), True],
-                ["6", "4", today.strftime('%m/%d/%Y'), None, True]]
+        cols = ["Alert ID", "Incident ID",
+                "Date", "Report Time", 
+                "Incident Alert", "Incident Category",
+                "Nearest Address to Incident", "geometry"]
+        data = [
+            ["6", "2", today.strftime('%m/%d/%Y'), today.strftime("%H:%M"),
+                "Update 3", None, None, None],
+            ["5", "2", (today - timedelta(hours=3)).strftime('%m/%d/%Y'),
+                (today - timedelta(hours=3)).strftime("%H:%M"),
+                "Update 2", None, None, None],
+            ["4", "2", (today - timedelta(hours=5)).strftime('%m/%d/%Y'),
+                (today - timedelta(hours=5)).strftime("%H:%M"),
+                "Update 1", None, None, None],
+            ["3", "2", (today - timedelta(hours=6)).strftime('%m/%d/%Y'),
+                (today - timedelta(hours=6)).strftime("%H:%M"),
+                "Original Post", None, None, None],
+            ["2", "4", (today - timedelta(hours=3)).strftime('%m/%d/%Y'), None,
+                "Test Alert", None, None, None],
+            ["1", "1", two_days_ago.strftime('%m/%d/%Y'), two_days_ago.strftime("%H:%M"),
+                "Test Alert", None, None, None]
+        ]
+
+        expected_cols = [
+            'Incident Category', 'Incident Alert',
+            'Nearest Address to Incident', 'Date',
+            'Report Time', 'geometry'
+        ]
+        expected = [
+            [None, ("Update 3", "Update 2", "Update 1", "Original Post"), None,
+                today.strftime('%m/%d/%Y'), today.strftime("%H:%M"), None],
+            [None, ("Test Alert",), None, (today - timedelta(hours=3)).strftime('%m/%d/%Y'),
+                None, None]
+        ]
         test_data = pd.DataFrame(data, columns=cols)
-        expected = test_data[test_data['Keep']]
+        expected_df = pd.DataFrame(expected, columns=expected_cols)
         result = get_urgent_incidents(alerts_df=test_data, time_frame=4)
-        pdt.assert_frame_equal(expected, result)
+        pdt.assert_frame_equal(expected_df, result)
 
     def test_no_urgent_incidents(self):
         """

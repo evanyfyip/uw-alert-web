@@ -87,60 +87,58 @@ def get_urgent_incidents(alerts_df, time_frame):
     # No urgent alerts
     if len(urgent_alerts_df) == 0:
         return urgent_alerts_df
-    else:
-        # Step 5: Transform and filter the dataframe to only include the most
-        # recent alert of each incident
-        def combine_text(group):
-            """
-            Helper function to extract and combine
-            Incident Alert column of the given group
-            into a single row.
+    # Step 5: Transform and filter the dataframe to only include the most
+    # recent alert of each incident
+    def combine_text(group):
+        """
+        Helper function to extract and combine
+        Incident Alert column of the given group
+        into a single row.
 
-            Parameters
-            ----------
-            group : DataFrameGroupBy
-                A collection of pandas dataframes
-                where each dataframe is a single group
-                with a unique Incident ID
-            Returns
-            -------
-            row : dict
-                A dictionary of the new values for the grouped
-                dataframe
-            """
-            incident_df = group[1]
-            col_names = ['Incident ID', 'Alert ID', 'Incident Alert']
-            incident_df = incident_df.sort_values(['Alert ID'], ascending=False)
-            incident_id_value  = incident_df['Incident ID'].iloc[0]
-            alert_id_value  = incident_df['Alert ID'].iloc[0]
-            row = {
-                col_names[0]: incident_id_value,
-                col_names[1]: alert_id_value,
-                col_names[2]: tuple(incident_df['Incident Alert'])
-            }
-            return row
+        Parameters
+        ----------
+        group : DataFrameGroupBy
+            A collection of pandas dataframes
+            where each dataframe is a single group
+            with a unique Incident ID
+        Returns
+        -------
+        row : dict
+            A dictionary of the new values for the grouped
+            dataframe
+        """
+        incident_df = group[1]
+        col_names = ['Incident ID', 'Alert ID', 'Incident Alert']
+        incident_df = incident_df.sort_values(['Alert ID'], ascending=False)
+        incident_id_value  = incident_df['Incident ID'].iloc[0]
+        alert_id_value  = incident_df['Alert ID'].iloc[0]
+        row = {
+            col_names[0]: incident_id_value,
+            col_names[1]: alert_id_value,
+            col_names[2]: tuple(incident_df['Incident Alert'])
+        }
+        return row
 
-        groups = urgent_alerts_df[['Incident ID', 'Alert ID', 'Incident Alert']] \
-            .groupby('Incident ID', as_index=False)
+    groups = urgent_alerts_df[['Incident ID', 'Alert ID', 'Incident Alert']] \
+        .groupby('Incident ID', as_index=False)
 
-        data_list = []
-        for group in groups:
-            row = combine_text(group)
-            data_list.append(row)
+    data_list = []
+    for group in groups:
+        row = combine_text(group)
+        data_list.append(row)
 
-        incident_messages_df = pd.DataFrame(data_list)
-        print(incident_messages_df.columns)
-        merged_df = pd.merge(urgent_alerts_df, incident_messages_df, how='right', on='Alert ID')
-        merged_df['Incident Alert'] = merged_df['Incident Alert_y']
-        merged_df = merged_df[
-            ['Incident Category',
-            'Incident Alert',
-            'Nearest Address to Incident',
-            'Date',
-            'Report Time',
-            'geometry']
-            ]
-        return merged_df
+    incident_messages_df = pd.DataFrame(data_list)
+    merged_df = pd.merge(urgent_alerts_df, incident_messages_df, how='right', on='Alert ID')
+    merged_df['Incident Alert'] = merged_df['Incident Alert_y']
+    merged_df = merged_df[
+        ['Incident Category',
+        'Incident Alert',
+        'Nearest Address to Incident',
+        'Date',
+        'Report Time',
+        'geometry']
+        ]
+    return merged_df
 
 
 def filter_geodf(gdf, lat, lon, max_distance=10):
