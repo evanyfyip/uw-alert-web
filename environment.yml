@@ -1,5 +1,5 @@
 # To run use conda env create -f environment.yml
-name: uw_alerts_env
+name: uw_alerts_env_3_10
 channels:
   - conda-forge
 dependencies:

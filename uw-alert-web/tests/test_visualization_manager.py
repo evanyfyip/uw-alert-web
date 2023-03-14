@@ -3,6 +3,7 @@ Tests for visualization_manager.py
 """
 import unittest
 import ast
+import os
 from datetime import datetime, timedelta
 
 import geopandas as gpd
@@ -26,7 +27,9 @@ class TestGetUrgentAlerts(unittest.TestCase):
         """
         flag = True
         try:
-            alerts_df = pd.read_csv('data/uw_alerts_clean.csv')
+            dirname = os.path.dirname(__file__)
+            file_path = os.path.join(dirname, "../../data/uw_alerts_clean.csv")
+            alerts_df = pd.read_csv(file_path)
             get_urgent_incidents(alerts_df, time_frame=4)
         except ValueError:
             flag = False
@@ -79,54 +82,52 @@ class TestGetUrgentAlerts(unittest.TestCase):
         result = get_urgent_incidents(alerts_df=test_data, time_frame=4)
         pdt.assert_frame_equal(expected_df, result)
 
-    # def test_missing_report_times(self):
-    #     """
-    #     get_urgent_incidents should filter based
-    #     on report time and date first, but if there
-    #     is no report time, it should take any incidents
-    #     that occured that day.
-    #     """
-    #     today = datetime.today()
-    #     two_days_ago = today - timedelta(days=2)
-    #     cols = ["Alert ID", "Incident ID",
-    #             "Date", "Report Time", 
-    #             "Incident Alert", "Incident Category",
-    #             "Nearest Address to Incident", "geometry"]
-    #     data = [
-    #         ["6", "2", today.strftime('%m/%d/%Y'), today.strftime("%H:%M"),
-    #             "Update 3", None, None, None],
-    #         ["5", "2", (today - timedelta(hours=3)).strftime('%m/%d/%Y'),
-    #             (today - timedelta(hours=3)).strftime("%H:%M"),
-    #             "Update 2", None, None, None],
-    #         ["4", "2", (today - timedelta(hours=5)).strftime('%m/%d/%Y'),
-    #             (today - timedelta(hours=5)).strftime("%H:%M"),
-    #             "Update 1", None, None, None],
-    #         ["3", "2", (today - timedelta(hours=6)).strftime('%m/%d/%Y'),
-    #             (today - timedelta(hours=6)).strftime("%H:%M"),
-    #             "Original Post", None, None, None],
-    #         ["2", "4", (today - timedelta(hours=3)).strftime('%m/%d/%Y'), None,
-    #             "Test Alert", None, None, None],
-    #         ["1", "1", two_days_ago.strftime('%m/%d/%Y'), two_days_ago.strftime("%H:%M"),
-    #             "Test Alert", None, None, None]
-    #     ]
+    def test_missing_report_times(self):
+        """
+        get_urgent_incidents should filter based
+        on report time and date first, but if there
+        is no report time, it should take any incidents
+        that occured that day.
+        """
+        today = datetime.today()
+        two_days_ago = today - timedelta(days=2)
+        cols = ["Alert ID", "Incident ID",
+                "Date", "Report Time", 
+                "Incident Alert", "Incident Category",
+                "Nearest Address to Incident", "geometry"]
+        data = [
+            ["6", "2", today.strftime('%m/%d/%Y'), today.strftime("%H:%M"),
+                "Update 3", None, None, None],
+            ["5", "2", (today - timedelta(hours=3)).strftime('%m/%d/%Y'),
+                (today - timedelta(hours=3)).strftime("%H:%M"),
+                "Update 2", None, None, None],
+            ["4", "2", (today - timedelta(hours=5)).strftime('%m/%d/%Y'),
+                (today - timedelta(hours=5)).strftime("%H:%M"),
+                "Update 1", None, None, None],
+            ["3", "2", (today - timedelta(hours=6)).strftime('%m/%d/%Y'),
+                (today - timedelta(hours=6)).strftime("%H:%M"),
+                "Original Post", None, None, None],
+            ["2", "4", today.strftime('%m/%d/%Y'), None,
+                "Test Alert", None, None, None],
+            ["1", "1", two_days_ago.strftime('%m/%d/%Y'), two_days_ago.strftime("%H:%M"),
+                "Test Alert", None, None, None]
+        ]
 
-    #     expected_cols = [
-    #         'Incident Category', 'Incident Alert',
-    #         'Nearest Address to Incident', 'Date',
-    #         'Report Time', 'geometry'
-    #     ]
-    #     expected = [
-    #         [None, ("Update 3", "Update 2", "Update 1", "Original Post"), None,
-    #             today.strftime('%m/%d/%Y'), today.strftime("%H:%M"), None],
-    #         [None, ("Test Alert",), None, (today - timedelta(hours=3)).strftime('%m/%d/%Y'),
-    #             None, None]
-    #     ]
-    #     test_data = pd.DataFrame(data, columns=cols)
-    #     expected_df = pd.DataFrame(expected, columns=expected_cols)
-    #     result = get_urgent_incidents(alerts_df=test_data, time_frame=4)
-    #     print(expected_df)
-    #     print(result)
-    #     pdt.assert_frame_equal(expected_df, result)
+        expected_cols = [
+            'Incident Category', 'Incident Alert',
+            'Nearest Address to Incident', 'Date',
+            'Report Time', 'geometry'
+        ]
+        expected = [
+            [None, ("Update 3", "Update 2", "Update 1", "Original Post"), None,
+                today.strftime('%m/%d/%Y'), today.strftime("%H:%M"), None],
+            [None, ("Test Alert",), None, today.strftime('%m/%d/%Y'),
+                None, None]
+        ]
+        test_data = pd.DataFrame(data, columns=cols)
+        expected_df = pd.DataFrame(expected, columns=expected_cols)
+        result = get_urgent_incidents(alerts_df=test_data, time_frame=4)
+        pdt.assert_frame_equal(expected_df, result)
 
     def test_no_urgent_incidents(self):
         """
@@ -174,7 +175,9 @@ class TestFilterGeoDF(unittest.TestCase):
         """
         flag = True
         try:
-            gdf = gpd.read_file('data/SeattleGISData/udistrict_streets.geojson')
+            dirname = os.path.dirname(__file__)
+            file_path = os.path.join(dirname, "../../data/SeattleGISData/udistrict_streets.geojson")
+            gdf = gpd.read_file(file_path)
             filter_geodf(gdf, lat=10.0, lon=15)
         except ValueError:
             flag = False
@@ -187,7 +190,9 @@ class TestFilterGeoDF(unittest.TestCase):
         42nd street between 9th and Roosevelt
         """
         point = [47.657489, -122.318281]
-        gdf = gpd.read_file('data/SeattleGISData/udistrict_streets.geojson')
+        dirname = os.path.dirname(__file__)
+        file_path = os.path.join(dirname, "../../data/SeattleGISData/udistrict_streets.geojson")
+        gdf = gpd.read_file(file_path)
         test_gdf = filter_geodf(gdf, lat=point[0], lon=point[1])
         self.assertEqual(len(test_gdf), 1)
         self.assertEqual(test_gdf['UNITDESC'].iloc[0],
@@ -199,7 +204,9 @@ class TestFilterGeoDF(unittest.TestCase):
         8th Ave between 43rd and 45th
         """
         point = [47.660443, -122.319788]
-        gdf = gpd.read_file('data/SeattleGISData/udistrict_streets.geojson')
+        dirname = os.path.dirname(__file__)
+        file_path = os.path.join(dirname, "../../data/SeattleGISData/udistrict_streets.geojson")
+        gdf = gpd.read_file(file_path)
         test_gdf = filter_geodf(gdf, lat=point[0], lon=point[1])
         self.assertEqual(len(test_gdf), 1)
         self.assertEqual(test_gdf['UNITDESC'].iloc[0],
@@ -211,7 +218,9 @@ class TestFilterGeoDF(unittest.TestCase):
         intersection. Should return dataframe with 4 streets
         """
         point = [47.66131221275655, -122.31431884850726]
-        gdf = gpd.read_file('data/SeattleGISData/udistrict_streets.geojson')
+        dirname = os.path.dirname(__file__)
+        file_path = os.path.join(dirname, "../../data/SeattleGISData/udistrict_streets.geojson")
+        gdf = gpd.read_file(file_path)
         test_gdf = filter_geodf(gdf, lat=point[0], lon=point[1])
 
         streets = ['NE 45TH ST BETWEEN 12TH AVE NE AND BROOKLYN AVE NE',
@@ -240,7 +249,9 @@ class TestFilterGeoDF(unittest.TestCase):
         values raise a ValueError
         """
         test_cases = [[-90.4, -130], [22, 190], [-180, -200]]
-        gdf = gpd.read_file('data/SeattleGISData/udistrict_streets.geojson')
+        dirname = os.path.dirname(__file__)
+        file_path = os.path.join(dirname, "../../data/SeattleGISData/udistrict_streets.geojson")
+        gdf = gpd.read_file(file_path)
         for point in test_cases:
             with self.assertRaises(ValueError):
                 filter_geodf(gdf, lat=point[0], lon=point[1])
@@ -259,7 +270,9 @@ class TestGetFoliumMap(unittest.TestCase):
         """
         flag = True
         try:
-            alert_df = pd.read_csv('data/uw_alerts_clean.csv',
+            dirname = os.path.dirname(__file__)
+            file_path = os.path.join(dirname, "../../data/uw_alerts_clean.csv")
+            alert_df = pd.read_csv(file_path,
                                    converters = {'geometry': ast.literal_eval}).head()
             get_folium_map(alert_df)
         except ValueError:
@@ -280,7 +293,10 @@ class TestGetFoliumMap(unittest.TestCase):
         """
         Edge case test to check that alert_df has the necessary columns
         """
-        alert_df = pd.read_csv('data/uw_alerts_clean.csv',
+
+        dirname = os.path.dirname(__file__)
+        file_path = os.path.join(dirname, "../../data/uw_alerts_clean.csv")
+        alert_df = pd.read_csv(file_path,
                                converters = {'geometry': ast.literal_eval}).head().drop("geometry",
                                                                                         axis = 1)
         with self.assertRaises(ValueError):
