@@ -5,6 +5,7 @@ setup(
     version="0.1",
     packages=find_packages(),
     install_requires=[
+        'coverage',
         'pyproj',
         'folium==0.14.0',
         'shapely==2.0.1',

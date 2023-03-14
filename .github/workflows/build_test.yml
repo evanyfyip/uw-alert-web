@@ -71,21 +71,10 @@ jobs:
           # We don't need the base environment, so don't activate it
           auto-activate-base: false
 
-      # You don't normally need test coverage information when
-      # developing locally - we just want it in CI - so we install
-      # it here instead of in our environment file (which we also
-      # use locally). The coverage package that we download here
-      # does not support the "lcov" file format that Coveralls
-      # expects, so we'll use the coverage-lcov package to convert
-      # into the lcov format. coverage-lcov isn't available via
-      # conda so we install it with pip.
-      - name: Install additional development dependencies
-        run: |
-          conda install --yes coverage
-      
       # If there are any other steps in order for your tests to
       # run successfully, you can add those steps here!
-
+      
+      # Install package dependencies as specified in setup.py
       - name: Run setup.py
         run: |
           pip install -e .
