@@ -50,8 +50,10 @@ def filter_seattle_streets():
     udist_gdf = gdf[lon1_filt & lat1_filt & lon2_filt & lat2_filt]
 
     relevant_cols = ['UNITDESC', 'STNAME_ORD', 'XSTRLO', 'XSTRHI', 'INTRLO', 'INTRHI', 'geometry']
-    udist_gdf_sub = udist_gdf[relevant_cols]
-    udist_gdf_sub.to_file('../data/SeattleGISData/udistrict_streets_2.geojson', driver='GeoJSON')
+    udist_gdf[relevant_cols].to_file(
+      '../data/SeattleGISData/udistrict_streets_2.geojson',
+      driver='GeoJSON'
+   )
 
 if __name__ == '__main__':
     filter_seattle_streets()

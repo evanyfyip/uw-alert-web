@@ -48,6 +48,8 @@ def get_urgent_incidents(alerts_df, time_frame):
     urgent_incidents_df : Dataframe
         Pandas dataframe of the most urgent incidents
     """
+    if not isinstance(alerts_df, type(pd.DataFrame())):
+        raise TypeError("alerts_df must be of type pd.DataFrame")
     # Checking columns
     cols = ['Incident ID', 'Alert ID', 'Date', 'Report Time']
     for col in cols:
@@ -83,8 +85,6 @@ def get_urgent_incidents(alerts_df, time_frame):
     urgent_alerts_df = alerts_df[alerts_df['Incident ID'].isin(urgent_inc_ids)]
 
     urgent_alerts_df = urgent_alerts_df.drop(columns='date')
-
-
 
     # No urgent alerts
     if len(urgent_alerts_df) == 0:

@@ -5,7 +5,6 @@ A python module that contains all the server side functions that allow
 for communication between the front end (html files) to the backend (.py files).
 It handles requests from the frontend to update the map with new information.
 """
-
 import io
 import os
 import json
@@ -13,14 +12,11 @@ import ast
 import pandas as pd
 import openai
 import googlemaps
-
-#pylint: disable="wrong-import-order"
-#pylint: disable="unused-import"
-from io import StringIO
 from flask import Flask, render_template, request, redirect, url_for
 from dotenv import load_dotenv
 
 # Our modules
+#pylint: disable="import-error"
 from visualization_manager.visualization_manager import get_folium_map
 from visualization_manager.visualization_manager import get_urgent_incidents, attach_marker_ids
 from parse_uw_alerts import parse_uw_alerts
@@ -118,6 +114,7 @@ def about():
     sent to front end in flask
     """
     return render_template('/about.html')
+
 #pylint: disable=too-many-locals
 @app.route('/update_map',methods=['POST'])
 def update_map():
