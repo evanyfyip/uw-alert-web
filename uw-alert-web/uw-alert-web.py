@@ -17,9 +17,9 @@ from dotenv import load_dotenv
 
 # Our modules
 #pylint: disable="import-error"
-from visualization_manager.visualization_manager import get_folium_map
-from visualization_manager.visualization_manager import get_urgent_incidents, attach_marker_ids
-from parse_uw_alerts import parse_uw_alerts
+from .visualization_manager.visualization_manager import get_folium_map
+from .visualization_manager.visualization_manager import get_urgent_incidents, attach_marker_ids
+from .parse_uw_alerts import parse_uw_alerts
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 app.default_charset = 'utf-8'
