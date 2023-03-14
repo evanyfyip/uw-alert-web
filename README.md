@@ -26,10 +26,13 @@
   - Official blogpost maintained by the University of Washington dedicated to reporting incidents may affect students
   - Link: https://emergency.uw.edu/?_gl=1*ztz313*_ga*MzIwNzY5MTg2LjE2NjU4NzU5NjU.*_ga_3T65WK0BM8*MTY3NjMyNTM5Ny4yMS4wLjE2NzYzMjU0MDEuMC4wLjA.
 
-The following instructions are to be performed in a command line interface:
+The following instructions are to be performed in a command line interface from the root directory of the project: 
 - "git clone" the repository to download the latest version of the application
-- conda env create -f environment.yml
+- conda env create --name uw_alerts_env
 - conda activate uw_alerts_env
-- python app.py
+- pip install -e .
+- python uw-alert-web\uw-alert-web.py
+
+Our app also requires a .env file in the root directory containing API keys to the services we use: OpenAI, Google Maps, and Mapbox.
 
 The app will now be running on the URL: http://127.0.0.1:5000
