@@ -1,4 +1,5 @@
 # uw-alert-web
+[![Coverage Status](https://coveralls.io/repos/github/evanyfyip/uw-alert-web/badge.svg?branch=main)](https://coveralls.io/github/evanyfyip/uw-alert-web?branch=main)
 ## Group Members:
 - James Joko
 - John Michael
