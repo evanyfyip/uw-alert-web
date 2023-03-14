@@ -11,6 +11,7 @@ import pandas as pd
 import pandas.testing as pdt
 import numpy as np
 
+#pylint: disable=import-error
 from visualization_manager.visualization_manager \
     import filter_geodf, get_folium_map, get_urgent_incidents
 

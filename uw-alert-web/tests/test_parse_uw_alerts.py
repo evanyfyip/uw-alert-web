@@ -4,6 +4,8 @@ Tests for parse_uw_alerts.py
 import os
 import unittest
 import pandas as pd
+
+#pylint: disable=import-error
 from parse_uw_alerts.parse_uw_alerts import (
     prompt_gpt,
     generate_ids,
