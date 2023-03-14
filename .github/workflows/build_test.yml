@@ -96,7 +96,6 @@ jobs:
       # Next step: run the unit tests with code coverage.
       - name: Unit tests
         run: |
-          cd uw-alert-web
           coverage run -m unittest discover
           coverage report
           coverage lcov

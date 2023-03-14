@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300&family=Tilt+Neon&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Display&family=Noto+Serif:wght@400;700&display=swap');
 
 * {
     margin: 0;
@@ -15,7 +17,7 @@
     display:flex;
     justify-content: left;
     flex: 1.5;
-    font-family: 'Tilt Neon', sans-serif;
+    font-family: 'Noto Sans Display', sans-serif;
     font-size: 30px;
     color: #fff;
     padding-left: 20px;
@@ -44,7 +46,7 @@ nav ul li {
 }
   
 nav ul li a {
-    font-family: 'Tilt Neon', sans-serif;
+    font-family: 'Noto Sans Display', sans-serif;
     color: #5a5a5a;
     text-decoration: none; 
     font-weight: bold; 

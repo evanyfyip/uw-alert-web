@@ -10,7 +10,7 @@ import pandas as pd
 import pandas.testing as pdt
 import numpy as np
 
-from visualization_manager.visualization_manager \
+from ..visualization_manager.visualization_manager \
     import filter_geodf, get_folium_map, get_urgent_incidents
 
 class TestGetUrgentAlerts(unittest.TestCase):
