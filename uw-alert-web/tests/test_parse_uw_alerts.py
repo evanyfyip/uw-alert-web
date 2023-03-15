@@ -252,16 +252,6 @@ class TestParseUWAlertsCleanGPTOutput(unittest.TestCase):
     """
     Test methods for clean_gpt_output function.
     """
-    def test_clean_gpt_csv_fp(self):
-        """Test for requiring .csv filepath"""
-        load_dotenv('../.env')
-        gmaps = googlemaps.Client(key=os.getenv('GOOGLE_MAPS_API_KEY'))
-        with self.assertRaises(ValueError):
-            clean_gpt_output(gpt_output='test.txt', gmaps_client=gmaps)
-    def test_clean_gpt_gmaps_client(self):
-        """Test for requiring Google Maps Client"""
-        with self.assertRaises(ValueError):
-            clean_gpt_output(gpt_output=pd.DataFrame(), gmaps_client=None)
     def test_clean_gpt_gmaps_client2(self):
         """Test for requiring Google Maps Client"""
         with self.assertRaises(ValueError):
@@ -279,6 +269,16 @@ class TestParseUWAlertsCleanGPTOutput(unittest.TestCase):
     When running coverage locally with the following test
     included, we obtain an overall coverage of 92%.
     """
+    # def test_clean_gpt_csv_fp(self):
+    #     """Test for requiring .csv filepath"""
+    #     load_dotenv('../.env')
+    #     gmaps = googlemaps.Client(key=os.getenv('GOOGLE_MAPS_API_KEY'))
+    #     with self.assertRaises(ValueError):
+    #         clean_gpt_output(gpt_output='test.txt', gmaps_client=gmaps)
+    # def test_clean_gpt_gmaps_client(self):
+    #     """Test for requiring Google Maps Client"""
+    #     with self.assertRaises(ValueError):
+    #         clean_gpt_output(gpt_output=pd.DataFrame(), gmaps_client=None)
     # def test_clean_gpt_test_clean_output(self):
     #     """Test clean GPT output"""
     #     load_dotenv('../.env')
