@@ -317,8 +317,11 @@ def scrape_uw_alerts(uw_alert_filepath='../data/uw_alerts_clean.csv'):
     if not re.search(last_alert, newest_alert_list[1]):
         gpt_output = prompt_gpt(newest_alert_list, return_alert_type=True)
         gpt_table = generate_ids(uw_alerts, gpt_output[0], gpt_output[1])
-        gpt_table = clean_gpt_output(gpt_table, gmaps_client=gmaps_client)
+        gpt_table = clean_gpt_output(gpt_output=gpt_table,
+                                     gmaps_client=gmaps_client)
         uw_alerts = pd.concat([gpt_table, uw_alerts], ignore_index=True)
+        uw_alerts = clean_gpt_output(gpt_output=uw_alerts,
+                                     gmaps_client=gmaps_client)
         uw_alerts.to_csv(uw_alert_filepath, index=False)
         return gpt_table
     return None
