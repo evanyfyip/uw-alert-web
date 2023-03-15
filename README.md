@@ -46,6 +46,6 @@ MAPBOX_API_KEY='[INSERT YOUR KEY HERE]'
 API Keys can be obtained from the following:\
 [OpenAI](https://platform.openai.com)\
 [Google Maps](https://developers.google.com/maps/documentation/javascript/get-api-key)\
-[Mapbox](https://docs.mapbox.com/help/getting-started/access-tokens/)\
+[Mapbox](https://docs.mapbox.com/help/getting-started/access-tokens/)
 
 The app will now be running on the URL: http://127.0.0.1:5000
