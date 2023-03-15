@@ -5,7 +5,7 @@ to use the application.
 """
 from setuptools import setup, find_packages
 
-with open('requirements.txt', mode='r', encoding='str') as f:
+with open('requirements.txt', mode='r', encoding='utf8') as f:
     requirements = f.read().splitlines()
 
 setup(
