@@ -19,6 +19,9 @@
 - Parse real-time information from the UW alerts system and display the alert's origin.
 - Inform the user of alert trends over time and location
 
+## Demo video
+[Link to video](https://youtu.be/g1svuXIc0X8)
+
 ## Data Sources
 - Seattle GeoData
   - GIS database for Seattle streets that allows for map visualizations
