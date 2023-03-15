@@ -336,6 +336,3 @@ if __name__ == "__main__":
     FILE_START = 0
     openai.api_key = OPENAI_API_KEY
     gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
-    # parse_txt_data(FILEPATH, OUT_FILEPATH, file_start=FILE_START)
-    # gpt_clean = clean_gpt_output(gpt_output=OUT_FILEPATH, gmaps_client=gmaps)
-    # gpt_clean.to_csv(CLEAN_FILEPATH, index=False)

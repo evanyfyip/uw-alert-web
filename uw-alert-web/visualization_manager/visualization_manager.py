@@ -415,7 +415,7 @@ def update_marker_definition(marker_id, marker_dict):
     map_id = marker_dict['map_id']
     # Building html alert for left panel
     if isinstance(report_time, str):
-        if len(report_time.split(":")) == 3:        
+        if len(report_time.split(":")) == 3: 
             # Convert time string to datetime object
             time_obj = datetime.strptime(report_time, "%H:%M:%S")
             # Convert datetime object to non-military format string

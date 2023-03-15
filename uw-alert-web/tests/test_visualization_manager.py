@@ -347,7 +347,7 @@ class TestAttachMarkerIDs(unittest.TestCase):
         marker_dict = {
             'map_id': "map_8986a6e632750fefa0097972e041860a",
             'marker_83890b04aaf785c57736be66c43231bb': (
-                2, "Stabbing", "10:03:00", 
+                2, "Stabbing", "10:03:00",
                 ("UPDATE (10:03 a.m.): A stabbing investigation is ongoing",
                 "ORIGINAL POST: Stabbing occurred"),
                 "9/4/18"

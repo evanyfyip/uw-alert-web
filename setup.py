@@ -1,6 +1,11 @@
+"""
+Setup module that creates the
+environment and installs dependencies
+to use the application.
+"""
 from setuptools import setup, find_packages
 
-with open('requirements.txt') as f:
+with open('requirements.txt', mode='r', encoding=str) as f:
     requirements = f.read().splitlines()
 
 setup(
