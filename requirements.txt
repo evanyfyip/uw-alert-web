@@ -1,5 +1,6 @@
 coverage
 pyproj
+gunicorn
 folium==0.14.0
 shapely==2.0.1
 flask==2.2.2
