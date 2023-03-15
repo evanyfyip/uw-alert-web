@@ -82,8 +82,8 @@ jobs:
       # Next step: run pylint. Anything less than 10/10 will fail.
       - name: Lint with pylint
         run: |
-          pylint /**/**/*.py
-          pylint /**/*.py
+          pylint */*/*.py
+          pylint */*.py
           pylint *.py
       # Next step: run the unit tests with code coverage.
       - name: Unit tests
