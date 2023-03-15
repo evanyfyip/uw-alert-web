@@ -9,13 +9,7 @@ The current alert system informs users on a mailing list via email. We intend to
 - Needs: Current location, incident locations
 - Skills: Know how to navigate a website interface.
 
-## User 2: U-District Resident
-- Wants: Check incidents around their commute to places in U-District.
-- Interaction Methods: Use application
-- Needs: Current location, incident locations
-- Skills: Know how to navigate a website interface.
-
-## User 3: UW Alerts Staff
+## User 2: UW Alerts Staff
 - Wants: Check that alerts display correct location and information.
 - Interaction Methods: Admin interface
 - Needs: Admin previliges and interface
@@ -30,17 +24,9 @@ A collection of text reports from the UW Alert system. The reports were typed ou
 
 # Use Cases
 ## Objective: User checks if their usual commute is safe
-- User: Where is my location?
-- Application: Displays the user's current location on a map
-- User: Are there any incidents present on street X?
-- Application: There is an incident on street X?
-- User: How long ago was the incident?
-- Application: The incident happened 4 hours prior.
-- User: How dangerous was the incident?
-- Application: The alert was for suspiscious behavior.
+- User: I am walking home late after class, what area(s) should I avoid to stay safe?
+- Application: When opening the app, the user can see a map of the U-District area with markers indicating alerts within the past 4 hours.
 
-## Objective: User Verification
-- Application: Displays login page
-- User: Inserts username and password into the respective fields and submits
-- Application: If correct, show application home page
-- If incorrect, display "incorrect user credentials" and display blank login page.
+## Objective: User checks if a recent incident is resolved
+- User: There was an alert 2 hours ago. Has the incident resolved?
+- Application: Users can click on the markers within the app. A popup will show the alert incident type and the side panel will display text from the UW Alert Blog along with any updates.

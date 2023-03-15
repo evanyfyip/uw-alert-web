@@ -24,6 +24,7 @@ def prompt_gpt(lines, return_alert_type=False):
     Exceptions:
         lines must be a list of length at least 1.
         return_alert_type must be a boolean.
+        The first item in lines must contain a date.
     """
     if not isinstance(lines, list):
         raise ValueError("lines must be a list")
@@ -31,6 +32,8 @@ def prompt_gpt(lines, return_alert_type=False):
         raise ValueError("lines must be at least length 1")
     if not isinstance(return_alert_type, bool):
         raise ValueError("return_alert_type must be a boolean")
+    if re.match(r'^[A-z]+\s\d{1,2},\s\d{4}', lines[0]) is None:
+        raise ValueError("First item in lines must contain a date")
 
     gpt_task = ('Extract a markdown table with the columns Date (mm/dd/yyyy),'
                 ' Report Time (hh:mm AM/PM), Incident Time (hh:mm AM/PM),'
@@ -157,6 +160,7 @@ def generate_csv(out_filepath, lines):
     clean_data = generate_ids(out_filepath, gpt_table,
                               alert_type, parsing=True)
     clean_data.to_csv(out_filepath, index=False)
+    return 'CSV generated'
 
 def parse_txt_data(filepath, out_filepath, file_start=0):
     """
@@ -189,7 +193,7 @@ def parse_txt_data(filepath, out_filepath, file_start=0):
                    'Incident Category', 'Incident Summary',
                    'Incident Alert', 'Incident ID', 'Alert ID']
         empty_file = pd.DataFrame({column: [] for column in columns})
-        empty_file.to_csv(OUT_FILEPATH, index=False)
+        empty_file.to_csv(out_filepath, index=False)
     with open(filepath, encoding='UTF-8') as file:
         lines = file.readlines()
         last_date = None
@@ -199,7 +203,7 @@ def parse_txt_data(filepath, out_filepath, file_start=0):
             if (i + file_start) == (len(lines) - 1):
                 generate_csv(out_filepath,
                              [last_date]+lines[last_event_index:])
-            date_check = re.match(r'^[A-z]+\s\d{1,2},\s\d{4}\n$', line)
+            date_check = re.match(r'^[A-z]+\s\d{1,2},\s\d{4}', line)
             if date_check:
                 if last_event is not None:
                     alert_end = i + file_start
@@ -219,8 +223,9 @@ def parse_txt_data(filepath, out_filepath, file_start=0):
                         [last_date]+lines[last_event_index:alert_end])
                 last_event = 'original/update'
                 last_event_index = i + file_start
+    return 'Parsing complete'
 
-def clean_gpt_output(gpt_output='./data/uw_alerts_gpt.csv',
+def clean_gpt_output(gpt_output='../data/uw_alerts_gpt.csv',
                      gmaps_client=None):
     """
     Arguments:
@@ -241,6 +246,10 @@ def clean_gpt_output(gpt_output='./data/uw_alerts_gpt.csv',
         if not re.search('.csv$', gpt_output):
             raise ValueError("gpt_output must be a .csv filepath")
         gpt_data = pd.read_csv(gpt_output, index_col=False)
+    if len(gpt_data.index) == 0:
+        raise ValueError("gpt_ouput must have at least 1 row")
+    if not isinstance(gmaps_client, googlemaps.Client):
+        raise ValueError("gmaps_client must be a Google Maps Client")
     gpt_data['Date'] = pd.to_datetime(gpt_data['Date'],
                                       infer_datetime_format=True,
                                       errors='coerce')
@@ -288,11 +297,9 @@ def scrape_uw_alerts(uw_alert_filepath='../data/uw_alerts_clean.csv'):
         raise ValueError("uw_alert_filepath must be a string")
     if re.search(r'\.csv$', uw_alert_filepath) is None:
         raise ValueError("uw_alert_filepath must have a .csv extension")
-    load_dotenv('./.env')
-    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-    GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
-    openai.api_key = OPENAI_API_KEY
-    gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
+    load_dotenv('../.env')
+    openai.api_key = os.getenv('OPENAI_API_KEY')
+    gmaps_client = googlemaps.Client(key=os.getenv('GOOGLE_MAPS_API_KEY'))
     uw_alerts = pd.read_csv(uw_alert_filepath, index_col=False)
     last_alert = uw_alerts['Incident Alert'].values[0]
 
@@ -305,27 +312,30 @@ def scrape_uw_alerts(uw_alert_filepath='../data/uw_alerts_clean.csv'):
         if re.search(r'^[A-z]+\s\d{1,2},\s\d{4}', para.text):
             newest_alert_list = [para.text for para in p_tags[:2]]
             break
-    newest_alert_list[1] = re.sub(r'\u2013|\u2014', '-', 
+    newest_alert_list[1] = re.sub(r'\u2013|\u2014', '-',
                                   newest_alert_list[1])
     if not re.search(last_alert, newest_alert_list[1]):
         gpt_output = prompt_gpt(newest_alert_list, return_alert_type=True)
         gpt_table = generate_ids(uw_alerts, gpt_output[0], gpt_output[1])
-        gpt_table = clean_gpt_output(gpt_table, gmaps_client=gmaps)
+        gpt_table = clean_gpt_output(gpt_output=gpt_table,
+                                     gmaps_client=gmaps_client)
         uw_alerts = pd.concat([gpt_table, uw_alerts], ignore_index=True)
+        uw_alerts = clean_gpt_output(gpt_output=uw_alerts,
+                                     gmaps_client=gmaps_client)
         uw_alerts.to_csv(uw_alert_filepath, index=False)
         return gpt_table
     return None
 
 if __name__ == "__main__":
-    load_dotenv('./.env')
+    load_dotenv('../.env')
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
     GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
-    FILEPATH = './data/UW_Alerts_2018_2022.txt'
-    OUT_FILEPATH = './data/uw_alerts_gpt.csv'
-    CLEAN_FILEPATH = './data/uw_alerts_clean.csv'
-    FILE_START = 176
+    FILEPATH = '../data/UW_Alerts_2018_2022.txt'
+    OUT_FILEPATH = '../data/uw_alerts_gpt.csv'
+    CLEAN_FILEPATH = '../data/uw_alerts_clean.csv'
+    FILE_START = 0
     openai.api_key = OPENAI_API_KEY
     gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
     # parse_txt_data(FILEPATH, OUT_FILEPATH, file_start=FILE_START)
-    # gpt_clean = clean_gpt_output(gmaps_client=gmaps)
+    # gpt_clean = clean_gpt_output(gpt_output=OUT_FILEPATH, gmaps_client=gmaps)
     # gpt_clean.to_csv(CLEAN_FILEPATH, index=False)
