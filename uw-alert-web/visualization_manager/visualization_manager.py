@@ -414,15 +414,15 @@ def update_marker_definition(marker_id, marker_dict):
     element_id, category, report_time, incident_messages, date = marker_dict[marker_id]
     map_id = marker_dict['map_id']
     # Building html alert for left panel
-    if report_time is None:
-        report_time_str = 'No report time found'
+    if isinstance(report_time, str):
+        if len(report_time.split(":")) == 3:        
+            # Convert time string to datetime object
+            time_obj = datetime.strptime(report_time, "%H:%M:%S")
+            # Convert datetime object to non-military format string
+            hour = str(int(datetime.strftime(time_obj, "%I")))
+            report_time_str = hour + datetime.strftime(time_obj, ":%M %p")
     else:
-        # Convert time string to datetime object
-        time_obj = datetime.strptime(report_time, "%H:%M:%S")
-
-        # Convert datetime object to non-military format string
-        hour = str(int(datetime.strftime(time_obj, "%I")))
-        report_time_str = hour + datetime.strftime(time_obj, ":%M %p")
+        report_time_str = ""
 
     html_string = f"""
             <h2>{category} - {date} {report_time_str}</h2><br>
