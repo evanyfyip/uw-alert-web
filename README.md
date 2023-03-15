@@ -33,6 +33,7 @@ The following instructions are to be performed in a command line interface from 
 - pip install -e .
 - cd uw-alert-web
 - flask --app=uw-alert-web run
+- We found that on Windows systems, the above command sometimes does not work. Instead, run "python -m flask --app=uw-alert-web run"
 
 Our app also requires a .env file in the root directory containing API keys to the services we use. It should look like the following:\
 OPENAI_API_KEY='[INSERT YOUR KEY HERE]'\
