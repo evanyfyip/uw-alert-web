@@ -1,36 +1,54 @@
 # Component Specification 
-The document should have sections for.
-Software components. High level description of the software components such as: data manager, which provides a simplified interface to your data and provides application specific features (e.g., querying data subsets); and visualization manager, which displays data frames as a plot. Describe at least 3 components specifying: what it does, inputs it requires, and outputs it provides. If you have more significant components in your system, we highly suggest documenting those as well.
-Interactions to accomplish use cases. Describe how the above software components interact to accomplish your use cases. Include at least one interaction diagram.
-Preliminary plan. A list of tasks in priority order.
 
 ## Software Component
 
-**Front End manager:**
-The Front End manager implements the front end and back end connection by using flask to display a plotly plot through HTML and javascript on a webpage. 
-The Front End manager requires a figure produced by the plot manager in order to return a JSON variable that encodes the visualization. 
-The Front End manager returns a render template that communicates with the HTML file in the current directory to display the JSON dump as a visualzation on a webpage. 
+**1. Server:**
+- Modules: `uw-alerts-web.py`
+- Static: `main.css`, `about.css`
+- Templates: `home.html`, `demo.html`, `about.html`, `past.html`
 
-**Visualization Manager:** The visualization manager implements the creation of a plotly plot using data scraped from the UW Alerts Webpage. 
+The server implements the front end and back end connection by using flask to display a plotly plot through HTML and javascript on a webpage. 
+The inputs to this component are an html map and metadata produced by the Visualization Manager. The server returns a render template that is passed through to the html pages listed in the templates above. The server also handles user navigation, styling, and requests to update the map with new information.
 
-The visualization manager requires numerous python packages, ranging from pandas, geopandas, plotly, and matplotlib. It also requires a csv file which indicates incidents of crime and the area.
+**2. Visualization Manager:**
+- Module: `visualization_manager.py`
 
-The visualization manager returns the figure visualization of the map of seattle/u-district which lines indicating which areas are deemed unsafe at the current moment. 
+Description:
+The visualization manager implements the creation of a folium plot using data scraped from the UW Alerts Webpage and returns a rendered interactive html map that is passed to the front end manager. This plot consists of an interactive leaflet map with markers and popups to indicate the locations of current incidents around U-district. The visualization manager requires numerous python packages, ranging from pandas, geopandas, folium, and matplotlib. It also requires a csv file which indicates incidents of crime and the area. This csv is produced by the Text Manager which scrapes the UW alerts website.
 
-**Text Manager:**
+**3. Web Parser:**
+- Module: `parse_uw_alerts.py`
 
-The text manager implements the parsing/scraping of the UW alerts website in order to update the application with new incidents of crime.
+Description:
+The web parser implements the parsing/scraping of the UW alerts website in order to update the application with new incidents of crime. The primary module is parse_uw_alerts which utilizes multiple different functions to scrape the website. The process is as follows:
 
-The text manager requires 
+1. `scrape_uw_alerts()`: scrapes the uw alerts blog for alert descriptions
+2. `prompt_gpt()`: Sends the text from the blog to ChatGPT to convert from free text format to a structured format
+3. `generate_ids()`: Generates unique Alert IDs and Incident IDs for each alert
+4. `clean_gpt_output()`: Cleans the table and passes the address to Google maps API to get a latitude and longitude which will call `prompt_gpt()` then `generate_ids()` then `clean_gpt_output()` will save the final output to uw_alerts_clean.csv
 
-The text manager returns the csv file with crime incidents with severity, time, location, and radius. 
+The web parser requires the following dependencies: os, io, time, re, pandas, openai, transformers, googlemaps, dotenv, bs4 and requests
+
+The web parser returns the csv file with incidents with the following columns:
+- Alert ID
+- Incident ID
+- Date
+- Report Time
+- Incident Time
+- Nearest Address to Incident
+- Incident Category
+- Incident Summary
+- Incident Alert
+- Alert Type
+- Google Address
+- geometry
 
 ## Preliminary Plan
-1. Develop map interface.
+1. Develop map interface locally
 2. Clean UW Alerts text data to obtain key incident information.
 3. Develop method to update live map when a new incident is reported on UW Alerts. 
 
 ## Interaction Diagram
-![image](https://user-images.githubusercontent.com/45160871/225167868-11f39507-1d5d-4dc9-b372-0e2828f0c3ba.png)
+![UW Alerts Map_ Component Interaction Diagram](https://user-images.githubusercontent.com/50302514/225177570-a27da450-6494-4d5d-87a5-f0e3bee54391.png)
 
 
