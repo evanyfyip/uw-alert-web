@@ -258,12 +258,6 @@ class TestParseUWAlertsCleanGPTOutput(unittest.TestCase):
         gmaps = googlemaps.Client(key=os.getenv('GOOGLE_MAPS_API_KEY'))
         with self.assertRaises(ValueError):
             clean_gpt_output(gpt_output='test.txt', gmaps_client=gmaps)
-    def test_clean_gpt_df(self):
-        """Test for requiring Pandas DataFrame input"""
-        load_dotenv('../.env')
-        gmaps = googlemaps.Client(key=os.getenv('GOOGLE_MAPS_API_KEY'))
-        with self.assertRaises(ValueError):
-            clean_gpt_output(gpt_output=[1,2,3], gmaps_client=gmaps)
     def test_clean_gpt_gmaps_client(self):
         """Test for requiring Google Maps Client"""
         with self.assertRaises(ValueError):
@@ -279,7 +273,7 @@ class TestParseUWAlertsCleanGPTOutput(unittest.TestCase):
             clean_gpt_output(gpt_output=pd.DataFrame(),
                              gmaps_client=123)
     """
-    The test below is commented out because it requires
+    The tests below is commented out because it requires
     API keys. Github's build tests fail because our project
     gitignores the .env containing the API keys.
     When running coverage locally with the following test
@@ -300,6 +294,12 @@ class TestParseUWAlertsCleanGPTOutput(unittest.TestCase):
     #     })
     #     pdt.assert_frame_equal(gpt_clean.reset_index(drop=True),
     #                            expected_result.reset_index(drop=True))
+    # def test_clean_gpt_df(self):
+    #     """Test for requiring Pandas DataFrame input"""
+    #     load_dotenv('../.env')
+    #     gmaps = googlemaps.Client(key=os.getenv('GOOGLE_MAPS_API_KEY'))
+    #     with self.assertRaises(ValueError):
+    #         clean_gpt_output(gpt_output=[1,2,3], gmaps_client=gmaps)
 
 class TestParseUWAlertsScrapeUWAlerts(unittest.TestCase):
     """
