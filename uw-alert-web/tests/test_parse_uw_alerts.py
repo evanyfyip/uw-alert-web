@@ -4,10 +4,6 @@ Tests for parse_uw_alerts.py
 import os
 import unittest
 import pandas as pd
-# import pandas.testing as pdt
-from dotenv import load_dotenv
-import googlemaps
-# import openai
 #pylint: disable=import-error
 #pylint: disable=no-name-in-module
 #pylint: disable=pointless-string-statement

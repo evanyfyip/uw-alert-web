@@ -19,6 +19,9 @@
 - Parse real-time information from the UW alerts system and display the alert's origin.
 - Inform the user of alert trends over time and location
 
+## Demo video
+[Link to video](https://youtu.be/g1svuXIc0X8)
+
 ## Data Sources
 - Seattle GeoData
   - GIS database for Seattle streets that allows for map visualizations
@@ -34,6 +37,7 @@ The following instructions are to be performed in a command line interface from 
 - pip install -e .
 - cd uw-alert-web
 - flask --app=uw-alert-web run
+- We found that on Windows systems, the above command sometimes does not work. Instead, run "python -m flask --app=uw-alert-web run"
 
 Our app also requires a .env file in the root directory containing API keys to the services we use. It should look like the following:\
 OPENAI_API_KEY='[INSERT YOUR KEY HERE]'\
@@ -41,8 +45,8 @@ GOOGLE_MAPS_API_KEY='[INSERT YOUR KEY HERE]'\
 MAPBOX_API_KEY='[INSERT YOUR KEY HERE]'
 
 API Keys can be obtained from the following:\
-[OpenAI](https://platform.openai.com)
-[Google Maps](https://developers.google.com/maps/documentation/javascript/get-api-key)
+[OpenAI](https://platform.openai.com)\
+[Google Maps](https://developers.google.com/maps/documentation/javascript/get-api-key)\
 [Mapbox](https://docs.mapbox.com/help/getting-started/access-tokens/)
 
 The app will now be running on the URL: http://127.0.0.1:5000
