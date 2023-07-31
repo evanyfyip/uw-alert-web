@@ -5,7 +5,6 @@ import unittest
 import ast
 import os
 from datetime import datetime, timedelta
-
 import geopandas as gpd
 import pandas as pd
 import pandas.testing as pdt

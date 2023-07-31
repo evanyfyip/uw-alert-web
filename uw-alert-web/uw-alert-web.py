@@ -131,6 +131,7 @@ def update_map():
     #Parsing
     load_dotenv('../env')
     openai.api_key = os.getenv('OPENAI_API_KEY')
+    # TODO: Pull in database as a pandas dataframe
     uw_alert_filepath='../data/uw_alerts_clean.csv'
     uw_alerts = pd.read_csv(uw_alert_filepath,index_col=False)
     new_data = request.form['text-input']
@@ -147,10 +148,13 @@ def update_map():
     uw_alerts =pd.concat([gpt_table,uw_alerts],ignore_index=True)
     uw_alerts.to_csv(uw_alert_filepath,index=False)
     #send cleaned csv into viz manager
-    dirname = os.path.dirname(__file__)
-    filename = os.path.join(dirname, "../data/uw_alerts_clean.csv")
-    alert_df = pd.read_csv(filename, converters = {'geometry': ast.literal_eval})
-    urgent_alerts_df = get_urgent_incidents(alert_df, time_frame=24)
+    # Commenting out redundant code
+    # dirname = os.path.dirname(__file__)
+    # filename = os.path.join(dirname, "../data/uw_alerts_clean.csv")
+    # alert_df = pd.read_csv(filename, converters = {'geometry': ast.literal_eval})
+    # End comment
+    # renamed alert_df in below code as uw_alerts
+    urgent_alerts_df = get_urgent_incidents(uw_alerts, time_frame=24)
     alert_map, marker_dict = get_folium_map(urgent_alerts_df)
     updated_map, updated_marker_dict = attach_marker_ids(alert_map, marker_dict)
     marker_json = json.dumps(updated_marker_dict)

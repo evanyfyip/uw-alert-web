@@ -4,6 +4,10 @@ Tests for parse_uw_alerts.py
 import os
 import unittest
 import pandas as pd
+import openai
+import googlemaps
+from dotenv import load_dotenv
+import pandas.testing as pdt
 #pylint: disable=import-error
 #pylint: disable=no-name-in-module
 #pylint: disable=pointless-string-statement
@@ -53,18 +57,18 @@ class TestParseUWAlertsPromptGPT(unittest.TestCase):
     When running coverage locally with the following test
     included, we obtain an overall coverage of 92%.
     """
-    # def test_prompt_gpt_test_output(self):
-    #     """Test GPT output"""
-    #     load_dotenv('../.env')
-    #     openai.api_key = os.getenv('OPENAI_API_KEY')
-    #     test_prompt = ['March 9, 2023\n', 'UPDATE at 8:47pm: Random alert.']
-    #     expected_result = pd.DataFrame({
-    #         'Date': ['03/09/2023'],
-    #         'Alert Type': ['Update']
-    #     })
-    #     gpt_table = prompt_gpt(test_prompt)
-    #     pdt.assert_frame_equal(gpt_table[['Date', 'Alert Type']],
-    #                            expected_result)
+    def test_prompt_gpt_test_output(self):
+        """Test GPT output"""
+        load_dotenv('../.env')
+        openai.api_key = os.getenv('OPENAI_API_KEY')
+        test_prompt = ['March 9, 2023\n', 'UPDATE at 8:47pm: Random alert.']
+        expected_result = pd.DataFrame({
+            'Date': ['03/09/2023'],
+            'Alert Type': ['Update']
+        })
+        gpt_table = prompt_gpt(test_prompt)
+        pdt.assert_frame_equal(gpt_table[['Date', 'Alert Type']],
+                               expected_result)
 
 class TestParseUWAlertsGenerateIds(unittest.TestCase):
     """
@@ -124,29 +128,29 @@ class TestParseUWAlertsGenerateIds(unittest.TestCase):
     When running coverage locally with the following test
     included, we obtain an overall coverage of 92%.
     """
-    # def test_gen_id_output(self):
-    #     """Test for generate_ids output"""
-    #     dirname = os.path.dirname(__file__)
-    #     file_path = os.path.join(dirname, "../../data/uw_alerts_gpt.csv")
-    #     gpt_table = pd.DataFrame({
-    #         'Alert Type': ['Original']
-    #     })
-    #     clean_file = pd.read_csv(file_path, index_col=False)
-    #     max_alert_id = max(clean_file['Alert ID'].values)
-    #     max_incident_id = max(clean_file['Incident ID'].values)
-    #     expected_output = pd.DataFrame({
-    #         'Alert ID': [max_alert_id+1],
-    #         'Incident ID': [max_incident_id+1]
-    #     })
-    #     gen_id_output = generate_ids(uw_alert_file=file_path,
-    #                                  gpt_table=gpt_table,
-    #                                  alert_type=gpt_table[
-    #         'Alert Type'].values[0],
-    #                                  parsing=False)
-    #     gen_id_output = gen_id_output[['Alert ID',
-    #                                    'Incident ID']]
-    #     pdt.assert_frame_equal(gen_id_output.reset_index(drop=True),
-    #                            expected_output.reset_index(drop=True))
+    def test_gen_id_output(self):
+        """Test for generate_ids output"""
+        dirname = os.path.dirname(__file__)
+        file_path = os.path.join(dirname, "../../data/uw_alerts_gpt.csv")
+        gpt_table = pd.DataFrame({
+            'Alert Type': ['Original']
+        })
+        clean_file = pd.read_csv(file_path, index_col=False)
+        max_alert_id = max(clean_file['Alert ID'].values)
+        max_incident_id = max(clean_file['Incident ID'].values)
+        expected_output = pd.DataFrame({
+            'Alert ID': [max_alert_id+1],
+            'Incident ID': [max_incident_id+1]
+        })
+        gen_id_output = generate_ids(uw_alert_file=file_path,
+                                     gpt_table=gpt_table,
+                                     alert_type=gpt_table[
+            'Alert Type'].values[0],
+                                     parsing=False)
+        gen_id_output = gen_id_output[['Alert ID',
+                                       'Incident ID']]
+        pdt.assert_frame_equal(gen_id_output.reset_index(drop=True),
+                               expected_output.reset_index(drop=True))
 
 class TestParseUWAlertsGenerateCSV(unittest.TestCase):
     """
@@ -179,17 +183,17 @@ class TestParseUWAlertsGenerateCSV(unittest.TestCase):
     When running coverage locally with the following test
     included, we obtain an overall coverage of 92%.
     """
-    # def test_gen_csv_list_length(self):
-    #     """Test for generate_csv output"""
-    #     load_dotenv('../.env')
-    #     openai.api_key = os.getenv('OPENAI_API_KEY')
-    #     text_txt = '../data/UW_Alerts_TEST.txt'
-    #     out_filepath = '../data/uw_alerts_gpt_TEST.csv'
-    #     with open(text_txt, encoding='UTF-8') as file:
-    #         lines = file.readlines()
-    #     test_output = generate_csv(out_filepath=out_filepath,
-    #                                lines=lines)
-    #     self.assertEqual(test_output, 'CSV generated')
+    def test_gen_csv_list_length(self):
+        """Test for generate_csv output"""
+        load_dotenv('../.env')
+        openai.api_key = os.getenv('OPENAI_API_KEY')
+        text_txt = '../data/UW_Alerts_TEST.txt'
+        out_filepath = '../data/uw_alerts_gpt_TEST.csv'
+        with open(text_txt, encoding='UTF-8') as file:
+            lines = file.readlines()
+        test_output = generate_csv(out_filepath=out_filepath,
+                                   lines=lines)
+        self.assertEqual(test_output, 'CSV generated')
 
 class TestParseUWAlertsParseTxtData(unittest.TestCase):
     """
@@ -234,15 +238,15 @@ class TestParseUWAlertsParseTxtData(unittest.TestCase):
     When running coverage locally with the following test
     included, we obtain an overall coverage of 92%.
     """
-    # def test_txt_file_output(self):
-    #     """Test for parse_txt_data output"""
-    #     load_dotenv('../.env')
-    #     openai.api_key = os.getenv('OPENAI_API_KEY')
-    #     filepath = '../data/UW_Alerts_TEST.txt'
-    #     out_filepath = '../data/uw_alerts_gpt_TEST.csv'
-    #     test_output = parse_txt_data(filepath=filepath,
-    #                                  out_filepath=out_filepath)
-    #     self.assertEqual(test_output, 'Parsing complete')
+    def test_txt_file_output(self):
+        """Test for parse_txt_data output"""
+        load_dotenv('../.env')
+        openai.api_key = os.getenv('OPENAI_API_KEY')
+        filepath = '../data/UW_Alerts_TEST.txt'
+        out_filepath = '../data/uw_alerts_gpt_TEST.csv'
+        test_output = parse_txt_data(filepath=filepath,
+                                     out_filepath=out_filepath)
+        self.assertEqual(test_output, 'Parsing complete')
 
 class TestParseUWAlertsCleanGPTOutput(unittest.TestCase):
     """
@@ -265,37 +269,37 @@ class TestParseUWAlertsCleanGPTOutput(unittest.TestCase):
     When running coverage locally with the following test
     included, we obtain an overall coverage of 92%.
     """
-    # def test_clean_gpt_csv_fp(self):
-    #     """Test for requiring .csv filepath"""
-    #     load_dotenv('../.env')
-    #     gmaps = googlemaps.Client(key=os.getenv('GOOGLE_MAPS_API_KEY'))
-    #     with self.assertRaises(ValueError):
-    #         clean_gpt_output(gpt_output='test.txt', gmaps_client=gmaps)
-    # def test_clean_gpt_gmaps_client(self):
-    #     """Test for requiring Google Maps Client"""
-    #     with self.assertRaises(ValueError):
-    #         clean_gpt_output(gpt_output=pd.DataFrame(), gmaps_client=None)
-    # def test_clean_gpt_test_clean_output(self):
-    #     """Test clean GPT output"""
-    #     load_dotenv('../.env')
-    #     gmaps = googlemaps.Client(key=os.getenv('GOOGLE_MAPS_API_KEY'))
-    #     gpt_clean = clean_gpt_output(gmaps_client=gmaps).tail(1)
-    #     gpt_clean = gpt_clean[['Nearest Address to Incident',
-    #                                       'Alert Type',
-    #                                       'Google Address']]
-    #     expected_result = pd.DataFrame({
-    #         'Nearest Address to Incident': ['5200 Block of 20th Ave. NE'],
-    #         'Alert Type': ['Original'],
-    #         'Google Address': ['5200 20th Ave NE, Seattle, WA 98105, USA']
-    #     })
-    #     pdt.assert_frame_equal(gpt_clean.reset_index(drop=True),
-    #                            expected_result.reset_index(drop=True))
-    # def test_clean_gpt_df(self):
-    #     """Test for requiring Pandas DataFrame input"""
-    #     load_dotenv('../.env')
-    #     gmaps = googlemaps.Client(key=os.getenv('GOOGLE_MAPS_API_KEY'))
-    #     with self.assertRaises(ValueError):
-    #         clean_gpt_output(gpt_output=[1,2,3], gmaps_client=gmaps)
+    def test_clean_gpt_csv_fp(self):
+        """Test for requiring .csv filepath"""
+        load_dotenv('../.env')
+        gmaps = googlemaps.Client(key=os.getenv('GOOGLE_MAPS_API_KEY'))
+        with self.assertRaises(ValueError):
+            clean_gpt_output(gpt_output='test.txt', gmaps_client=gmaps)
+    def test_clean_gpt_gmaps_client(self):
+        """Test for requiring Google Maps Client"""
+        with self.assertRaises(ValueError):
+            clean_gpt_output(gpt_output=pd.DataFrame(), gmaps_client=None)
+    def test_clean_gpt_test_clean_output(self):
+        """Test clean GPT output"""
+        load_dotenv('../.env')
+        gmaps = googlemaps.Client(key=os.getenv('GOOGLE_MAPS_API_KEY'))
+        gpt_clean = clean_gpt_output(gmaps_client=gmaps).tail(1)
+        gpt_clean = gpt_clean[['Nearest Address to Incident',
+                                          'Alert Type',
+                                          'Google Address']]
+        expected_result = pd.DataFrame({
+            'Nearest Address to Incident': ['5200 Block of 20th Ave. NE'],
+            'Alert Type': ['Original'],
+            'Google Address': ['5200 20th Ave NE, Seattle, WA 98105, USA']
+        })
+        pdt.assert_frame_equal(gpt_clean.reset_index(drop=True),
+                               expected_result.reset_index(drop=True))
+    def test_clean_gpt_df(self):
+        """Test for requiring Pandas DataFrame input"""
+        load_dotenv('../.env')
+        gmaps = googlemaps.Client(key=os.getenv('GOOGLE_MAPS_API_KEY'))
+        with self.assertRaises(ValueError):
+            clean_gpt_output(gpt_output=[1,2,3], gmaps_client=gmaps)
 
 class TestParseUWAlertsScrapeUWAlerts(unittest.TestCase):
     """
@@ -316,19 +320,19 @@ class TestParseUWAlertsScrapeUWAlerts(unittest.TestCase):
     When running coverage locally with the following test
     included, we obtain an overall coverage of 92%.
     """
-    # def test_scrape_uw_alerts_output(self):
-    #     """Test for scrape_uw_alerts output"""
-    #     dirname = os.path.dirname(__file__)
-    #     file_path = os.path.join(dirname,
-    #                              "../../data/uw_alerts_clean_TEST.csv")
-    #     scrape_output = scrape_uw_alerts(uw_alert_filepath=file_path)
-    #     clean_test_file = pd.read_csv(file_path, index_col=False)
-    #     clean_test_file = clean_test_file.head(1)
-    #     try:
-    #         self.assertEqual(scrape_output, None)
-    #     except AssertionError:
-    #         pdt.assert_frame_equal(scrape_output.reset_index(drop=True),
-    #                                clean_test_file.reset_index(drop=True))
+    def test_scrape_uw_alerts_output(self):
+        """Test for scrape_uw_alerts output"""
+        dirname = os.path.dirname(__file__)
+        file_path = os.path.join(dirname,
+                                 "../../data/uw_alerts_clean_TEST.csv")
+        scrape_output = scrape_uw_alerts(uw_alert_filepath=file_path)
+        clean_test_file = pd.read_csv(file_path, index_col=False)
+        clean_test_file = clean_test_file.head(1)
+        try:
+            self.assertEqual(scrape_output, None)
+        except AssertionError:
+            pdt.assert_frame_equal(scrape_output.reset_index(drop=True),
+                                   clean_test_file.reset_index(drop=True))
 
 if __name__ == '__main__':
     unittest.main()

@@ -293,6 +293,7 @@ def scrape_uw_alerts(uw_alert_filepath='../data/uw_alerts_clean.csv'):
     Exceptions:
         uw_alert_filepath must be a string with .csv extension.
     """
+    # TODO: Pull from postgress database
     if not isinstance(uw_alert_filepath, str):
         raise ValueError("uw_alert_filepath must be a string")
     if re.search(r'\.csv$', uw_alert_filepath) is None:
@@ -301,6 +302,8 @@ def scrape_uw_alerts(uw_alert_filepath='../data/uw_alerts_clean.csv'):
     openai.api_key = os.getenv('OPENAI_API_KEY')
     gmaps_client = googlemaps.Client(key=os.getenv('GOOGLE_MAPS_API_KEY'))
     uw_alerts = pd.read_csv(uw_alert_filepath, index_col=False)
+
+    # TODO: Check last alert in postgress database
     last_alert = uw_alerts['Incident Alert'].values[0]
 
     url = "https://emergency.uw.edu/"
@@ -322,6 +325,7 @@ def scrape_uw_alerts(uw_alert_filepath='../data/uw_alerts_clean.csv'):
         uw_alerts = pd.concat([gpt_table, uw_alerts], ignore_index=True)
         uw_alerts = clean_gpt_output(gpt_output=uw_alerts,
                                      gmaps_client=gmaps_client)
+        # TODO: Write to postgress database
         uw_alerts.to_csv(uw_alert_filepath, index=False)
         return gpt_table
     return None
