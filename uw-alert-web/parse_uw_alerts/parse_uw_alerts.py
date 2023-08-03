@@ -14,17 +14,133 @@ from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 import requests
 
+
+def check_for_date_header(text):
+    """Helper function to search for date header in text
+    returns a boolean if the date of format (March 14, 2023) is found.
+    """
+    return re.search(r'^[A-z]+\s\d{1,2},\s\d{4}', text)
+  
+def remove_unicode(text):
+    clean_text = re.sub(r'\u2013|\u2014', '-', text)
+    clean_text = re.sub(r'\u2032', '', clean_text)
+    clean_text = re.sub(r'\u201C|\u201D|\u2033', '"', clean_text)
+    clean_text = re.sub(r'\u2019', "'", clean_text)
+    clean_text = re.sub(u'\xa0', u' ', clean_text) # replacing non-breaking spaces
+    return clean_text
+
+def get_alerts_from_page(page, separate_alerts=False):
+    """  
+    Given a page content from "https://emergency.uw.edu/", returns either
+    a list of each Incident on the page, or a list of all the alert lines.
+  
+    Parameters  
+    ----------  
+    page : requests.models.Response  
+        The content of the "https://emergency.uw.edu/" page to extract alerts from. 
+    separate_alerts : Bool
+        Default: False. When set to true, all_alerts is returned as a list
+        of lists of strings, where each nested list is a separate Incident. 
+  
+    Returns  
+    -------  
+    all_alerts : list of strings
+        Returns a list of each 
+    Examples  
+    --------  
+    >>> url = "https://emergency.uw.edu/sample-alerts-page"  
+    >>> page = requests.get(url, timeout=10)  
+    >>> get_alerts_from_page(page)  
+    """  
+    soup = BeautifulSoup(page.content,"html.parser")
+    main_content = soup.find(id="main_content")
+    tags = main_content.find_all('p')
+    all_alerts = []
+    alert_contents = []
+    for tag in enumerate(tags):
+        clean_text = remove_unicode(tag[1].text)
+        if check_for_date_header(clean_text):
+            # Don't add the first contents
+            if len(alert_contents) != 0:
+                if separate_alerts:
+                    all_alerts.append(alert_contents)
+                else:
+                    all_alerts.extend(alert_contents)
+            # Check if its a UW alert or just an advisory  
+            alert_contents = [clean_text]
+        else:
+            if (not clean_text.isspace()) & (len(clean_text) != 0):
+                alert_contents.append(clean_text)
+    return all_alerts
+
+
+def get_all_alerts_historical():
+    """
+    This method is used to scrape all of the alerts from 
+    emergency.uw.edu by iteratively parsing through each page. The
+    output is written to a file that contains all of the scraped
+    alerts (../data/uw_alerts_historical.txt). The alerts in this file
+    are in descending order by date.
+    
+    Note: If the structure of url changes, this function may become
+    depreciated.
+    
+    Parameters
+    ----------
+        None
+    
+    Returns
+    -------
+        Saves output to ../data/uw_alerts_historical.txt
+    """
+    status_code = 200
+    page_num = 0
+    all_alerts = []
+    while status_code == 200:
+        page_num += 1
+        url = f"https://emergency.uw.edu/page/{page_num}/"
+        page = requests.get(url, timeout=10)
+        status_code = page.status_code
+        if status_code == 200:
+            all_alerts.extend(get_alerts_from_page(page))
+    print(f"Extracted alerts from {page_num - 1} pages")
+    # Wipe previous contents
+    open('../data/uw_alerts_historical.txt', 'w').close()
+    for line in all_alerts:
+        with open('../data/uw_alerts_historical.txt', 'a') as f:
+            f.write(line + '\n')
+    print("Saved results into ../data/uw_alerts_historical.txt")
+    # except:
+        # print("Writing to file failed.")
+
+
 def prompt_gpt(lines, return_alert_type=False):
     """
-    Arguments:
-        lines - lines of text from .readlines output.
-    Returns:
-        A Pandas dataframe containing a structured 
-        table from the UW alert message chunk.
-    Exceptions:
-        lines must be a list of length at least 1.
-        return_alert_type must be a boolean.
-        The first item in lines must contain a date.
+    Extract and parse alert messages from the given lines and return a Pandas DataFrame  
+    containing a structured table of the alert messages. If return_alert_type is True,  
+    also returns the type of the alert message (Original or Update).  
+  
+    Parameters  
+    ----------  
+    lines : list of str  
+        List of lines of text from .readlines output.  
+    return_alert_type : bool, optional, default: False  
+        If True, the function will return both the DataFrame and the alert type.  
+  
+    Returns  
+    -------  
+    gpt_df : pd.DataFrame  
+        A Pandas DataFrame containing a structured table from the alert message chunk.  
+    alert_type : str, optional  
+        The type of the alert message, either "Original" or "Update". Returned only if  
+        return_alert_type is True.  
+  
+    Raises  
+    ------  
+    ValueError  
+        If lines is not a list, has length less than 1, or if the first item in lines  
+        does not contain a date.  
+        If return_alert_type is not a boolean.  
     """
     if not isinstance(lines, list):
         raise ValueError("lines must be a list")
@@ -32,7 +148,7 @@ def prompt_gpt(lines, return_alert_type=False):
         raise ValueError("lines must be at least length 1")
     if not isinstance(return_alert_type, bool):
         raise ValueError("return_alert_type must be a boolean")
-    if re.match(r'^[A-z]+\s\d{1,2},\s\d{4}', lines[0]) is None:
+    if check_for_date_header(lines[0]) is False:
         raise ValueError("First item in lines must contain a date")
 
     gpt_task = ('Extract a markdown table with the columns Date (mm/dd/yyyy),'
@@ -40,71 +156,124 @@ def prompt_gpt(lines, return_alert_type=False):
                 ' Nearest Address to Incident, Incident Category, and'
                 ' Incident Summary from the following alert message.\n'
                 'Text: """')
+    gpt_task = ('Extract a markdown table with the columns Date (mm/dd/yyyy),'
+            ' Report Time (hh:mm AM/PM), Incident Time (hh:mm AM/PM),'
+            ' Nearest Address to Incident, Incident Category, and'
+            ' Incident Summary from the following alert message.\n'
+            'Text: """')
+    # Extract alert chunk:
+    # Join lines together and remove special characters
     alert_chunk = '\n'.join(line for line in lines if not line.isspace())
     alert_chunk = alert_chunk.strip('\n')
     alert_chunk = re.sub(r'\u2013|\u2014', '-', alert_chunk)
+    
+    # Create gpt prompt
     gpt_prompt = '\n'.join([gpt_task, alert_chunk])
     gpt_prompt += '"""'
+    
+    # Count number of tokens
     tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
     n_tokens = len(tokenizer(gpt_prompt)['input_ids'])
+    
+    # Get response from openai
     response = openai.Completion.create(
         engine="text-davinci-003",
         prompt=gpt_prompt,
         max_tokens=4097-n_tokens)
-    gpt_table = pd.read_table(
-        io.StringIO(response['choices'][0]['text']), sep='|', \
-            skipinitialspace=True, header=0, index_col=False)
-    gpt_table.drop(list(
-        gpt_table.filter(regex = 'Unnamed')), axis = 1, inplace = True)
+    
+    # Convert json response to pandas dataframe
+    try:
+        gpt_df = pd.read_table(
+            io.StringIO(response['choices'][0]['text']),
+            sep='|',
+            skipinitialspace=True,
+            header=0,
+            index_col=False)
+    except:
+        print('failed to read the response')
+        print(response['choices'][0]['text'])
+    
+    # Remove Unnamed rows
+    gpt_df.drop(
+        list(gpt_df.filter(regex = 'Unnamed')),
+        axis = 1, 
+        inplace = True)
+    
     column_names = ['Date', 'Report Time', 'Incident Time',
                     'Nearest Address to Incident', 'Incident Category',
                     'Incident Summary']
-    gpt_table.columns = column_names
-    if re.match(r'(:)?--', gpt_table['Date'].values[0]):
-        gpt_table = gpt_table.iloc[1:]
-    gpt_table.reset_index(inplace=True)
-    gpt_table = gpt_table.loc[:, column_names]
+    gpt_df.columns = column_names
+    if re.match(r'(:)?--', gpt_df['Date'].values[0]):
+        gpt_df = gpt_df.iloc[1:]
+    gpt_df.reset_index(inplace=True)
+    gpt_df = gpt_df.loc[:, column_names]
+    
+    # Extracting the entire incident alert without the date
     alert_chunk = alert_chunk.split('\n')
     alert_chunk = [line for line in alert_chunk if not line.isspace()]
-    alert_chunk = alert_chunk[1:]
+    alert_chunk = alert_chunk[1:] # Ignoring the first line (date)
     alert_chunk = '\n'.join(alert_chunk)
-    gpt_table['Incident Alert'] = alert_chunk.strip('\n')
+    gpt_df['Incident Alert'] = alert_chunk.strip('\n')
+    
+    # Extracting the alert type
     alert_type = 'Original'
     for line in lines:
         if re.match(r'(\[)?update(d)?(:|\s+)', line, re.IGNORECASE):
             alert_type = 'Update'
-    gpt_table['Alert Type'] = alert_type
+    gpt_df['Alert Type'] = alert_type
+    
+    # Converting all columns type string
     for column in column_names:
-        gpt_table[column] = gpt_table[column].astype(str).str.strip()
+        gpt_df[column] = gpt_df[column].astype(str).str.strip()
+        
+    # Inserting a pause for GPT
     time.sleep(5)
     if return_alert_type:
-        return (gpt_table, alert_type)
-    return gpt_table
+        return (gpt_df, alert_type)
+    return gpt_df
 
 def generate_ids(uw_alert_file, gpt_table, alert_type, parsing=False):
-    """
-    Arguments:
-        uw_alert_file - either a filepath to csv file or Pandas DataFrame.
-        gpt_table - Pandas DataFrame of GPT output.
-        alert_type - string either 'Update' or 'Original'.
-        parsing - Boolean for if function call is to parse .txt file.
-    Returns:
-        A Pandas DataFrame where gpt_table has added columns
-        containing the incident and alert ids.
-    Exceptions:
-        uw_alert_file must be a filepath with .csv extension or
-        a Pandas DataFrame.
-        gpt_table must be a Pandas DataFrame.
+    """  
+    Generate incident and alert IDs for a given GPT table based on existing data in  
+    uw_alert_file. Returns a Pandas DataFrame where gpt_table has added columns  
+    containing the incident and alert IDs.  
+  
+    Parameters  
+    ----------  
+    uw_alert_file : str or pd.DataFrame  
+        Either a filepath to a CSV file or a Pandas DataFrame containing existing data.  
+    gpt_table : pd.DataFrame  
+        A Pandas DataFrame of GPT output.  
+    alert_type : str  
+        A string representing the alert type, either 'Update' or 'Original'.  
+    parsing : bool, optional, default: False  
+        If True, the function call is to parse a .txt file.  
+  
+    Returns  
+    -------  
+    gpt_table : pd.DataFrame  
+        A Pandas DataFrame where gpt_table has added columns containing the incident  
+        and alert IDs.  
+  
+    Raises  
+    ------  
+    ValueError  
+        If uw_alert_file is not a filepath with .csv extension or a Pandas DataFrame.  
+        If gpt_table is not a Pandas DataFrame or has no rows.  
+        If alert_type is not 'Update' or 'Original'.  
+        If parsing is not a boolean.  
     """
     if not isinstance(uw_alert_file, str):
         if not isinstance(uw_alert_file, pd.DataFrame):
             raise ValueError(
                 "uw_alert_file must be a filepath or Pandas DataFrame")
-        clean_data = uw_alert_file.copy()
+        else:
+            clean_data = uw_alert_file.copy()
     else:
         if not re.search('.csv$', uw_alert_file):
             raise ValueError("uw_alert_file must be a .csv filepath")
-        clean_data = pd.read_csv(uw_alert_file, index_col=False)
+        else:
+            clean_data = pd.read_csv(uw_alert_file, index_col=False)
     if not isinstance(gpt_table, pd.DataFrame):
         raise ValueError(
             "gpt_table must be a filepath or Pandas DataFrame")
@@ -115,23 +284,32 @@ def generate_ids(uw_alert_file, gpt_table, alert_type, parsing=False):
     if not isinstance(parsing, bool):
         raise ValueError("parsing must be a boolean")
 
+    # Updating and generating Incident ID and Alert ID
+    # Case 1: No data in clean_data
     if len(clean_data.index) == 0:
         gpt_table['Incident ID'] = 1
         gpt_table['Alert ID'] = 1
         return gpt_table
-    gpt_table['Alert ID'] = clean_data['Alert ID'].max() + 1
+    else:
+        gpt_table['Alert ID'] = clean_data['Alert ID'].max() + 1
+    
+    # Case 2: 
     if parsing:
         if clean_data['Alert Type'].values[-1] == 'Original':
             gpt_table['Incident ID'] = clean_data[
                 'Incident ID'].values[-1] + 1
             return pd.concat([clean_data, gpt_table], ignore_index=True)
-        gpt_table['Incident ID'] = clean_data['Incident ID'].values[-1]
-        return pd.concat([clean_data, gpt_table], ignore_index=True)
+        else:
+            gpt_table['Incident ID'] = clean_data['Incident ID'].values[-1]
+            return pd.concat([clean_data, gpt_table], ignore_index=True)
+
+    # Case 3: 
     if gpt_table['Alert Type'].values[0] == 'Update':
         gpt_table['Incident ID'] = clean_data['Incident ID'].values[0]
         return gpt_table
-    gpt_table['Incident ID'] = clean_data['Incident ID'].max() + 1
-    return gpt_table
+    else:
+        gpt_table['Incident ID'] = clean_data['Incident ID'].max() + 1
+        return gpt_table
 
 def generate_csv(out_filepath, lines):
     """
@@ -200,30 +378,36 @@ def parse_txt_data(filepath, out_filepath, file_start=0):
         last_event = None
         last_event_index = None
         for i, line in enumerate(lines[file_start:]):
-            if (i + file_start) == (len(lines) - 1):
-                generate_csv(out_filepath,
-                             [last_date]+lines[last_event_index:])
-            date_check = re.match(r'^[A-z]+\s\d{1,2},\s\d{4}', line)
-            if date_check:
-                if last_event is not None:
+            file_end = file_start + i
+            try:
+                if (i + file_start) == (len(lines) - 1):
+                    generate_csv(out_filepath,
+                                [last_date]+lines[last_event_index:])
+                date_check = check_for_date_header(line)
+                if date_check:
+                    if last_event is not None:
+                        alert_end = i + file_start
+                        generate_csv(
+                            out_filepath,
+                            [last_date]+lines[last_event_index:alert_end])
+                    last_date = line
+                    last_event = 'date'
+                    last_event_index = i + file_start
+                if re.match(
+                    r'(\[)?update(d)?(:|\s+)', line, re.IGNORECASE) or re.match(
+                    r'(\[)?original (post)?', line, re.IGNORECASE):
                     alert_end = i + file_start
-                    generate_csv(
-                        out_filepath,
-                        [last_date]+lines[last_event_index:alert_end])
-                last_date = line
-                last_event = 'date'
-                last_event_index = i + file_start
-            if re.match(
-                r'(\[)?update(d)?(:|\s+)', line, re.IGNORECASE) or re.match(
-                r'(\[)?original (post)?', line, re.IGNORECASE):
-                alert_end = i + file_start
-                if last_event == 'original/update':
-                    generate_csv(
-                        out_filepath,
-                        [last_date]+lines[last_event_index:alert_end])
-                last_event = 'original/update'
-                last_event_index = i + file_start
-    return 'Parsing complete'
+                    if last_event == 'original/update':
+                        generate_csv(
+                            out_filepath,
+                            [last_date]+lines[last_event_index:alert_end])
+                    last_event = 'original/update'
+                    last_event_index = i + file_start
+            except:
+                print("Failed to parse...")
+                return file_end
+    print('Parsing Complete')
+    return
 
 def clean_gpt_output(gpt_output='../data/uw_alerts_gpt.csv',
                      gmaps_client=None):
@@ -306,37 +490,116 @@ def scrape_uw_alerts(uw_alert_filepath='../data/uw_alerts_clean.csv'):
     # TODO: Check last alert in postgress database
     last_alert = uw_alerts['Incident Alert'].values[0]
 
-    url = "https://emergency.uw.edu/"
+    # page = requests.get(url, timeout=10)
+    # soup = BeautifulSoup(page.content,"html.parser")
+    # main_content = soup.find(id="main_content")
+    # p_tags = main_content.find_all('p')
+    
+    i = 0
+    url = f"https://emergency.uw.edu/page/{i}/"
     page = requests.get(url, timeout=10)
-    soup = BeautifulSoup(page.content,"html.parser")
-    main_content = soup.find(id="main_content")
-    p_tags = main_content.find_all('p')
-    for para in p_tags:
-        if re.search(r'^[A-z]+\s\d{1,2},\s\d{4}', para.text):
-            newest_alert_list = [para.text for para in p_tags[:2]]
+    contents = get_alerts_from_page(page, separate_alerts=True)
+    # clean_text = contents[0][0]
+    # while not re.search(last_alert, clean_text):
+    new_incidents_list = []
+    matched = False
+    for incident in contents:
+        print(incident)
+        print()
+        new_lines_list = []
+        for line in incident:
+            if re.search(last_alert, line):
+                matched = True
+                break
+            else:
+                new_lines_list.append(line)
+        new_incidents_list.append(new_lines_list)
+        if matched:
             break
-    newest_alert_list[1] = re.sub(r'\u2013|\u2014', '-',
-                                  newest_alert_list[1])
-    if not re.search(last_alert, newest_alert_list[1]):
-        gpt_output = prompt_gpt(newest_alert_list, return_alert_type=True)
-        gpt_table = generate_ids(uw_alerts, gpt_output[0], gpt_output[1])
-        gpt_table = clean_gpt_output(gpt_output=gpt_table,
-                                     gmaps_client=gmaps_client)
-        uw_alerts = pd.concat([gpt_table, uw_alerts], ignore_index=True)
-        uw_alerts = clean_gpt_output(gpt_output=uw_alerts,
-                                     gmaps_client=gmaps_client)
-        # TODO: Write to postgress database
-        uw_alerts.to_csv(uw_alert_filepath, index=False)
-        return gpt_table
+    print()
+    print()
+    print('new_incidents_list:')
+    print(new_incidents_list)
+    for i, new_incidents in enumerate(new_incidents_list):
+        gpt_output = prompt_gpt(new_incidents)
+        print(f'Incident {i} GPT output:')
+        print(gpt_output)
+    # clean_text = remove_unicode(p_tags[i].text)
+    # print('Done')
+    # print(newest_alerts_list)
+    # print('prompting GPT')
+    # gpt_output = prompt_gpt(newest_alerts_list, return_alert_type=True)
+    # print(gpt_output)
+        # newest_alerts_list.append(clean_text)
+        # gpt_output = prompt_gpt(newest_alerts_list, return_alert_type=True)
+        # gpt_table = generate_ids(uw_alerts, gpt_output[0], gpt_output[1])
+        # gpt_table = clean_gpt_output(gpt_output=gpt_table,
+        #                              gmaps_client=gmaps_client)
+        # uw_alerts = pd.concat([gpt_table, uw_alerts], ignore_index=True)
+        # uw_alerts = clean_gpt_output(gpt_output=uw_alerts,
+        #                              gmaps_client=gmaps_client)
+        # # TODO: Write to postgress database
+        # uw_alerts.to_csv(uw_alert_filepath, index=False)
+        # return gpt_table    
+        
+        
+    # for para in p_tags:
+    #     # Search for the date header ("March 18, 2023")
+    #     if check_for_date_header(para.text):
+    #         newest_alert_list = [para.text for para in p_tags[:2]]
+    #         break
+    # newest_alert_list[1] = re.sub(r'\u2013|\u2014', '-',
+    #                               newest_alert_list[1])
+    
+    # # If a new alert is detected.
+    # if not re.search(last_alert, newest_alert_list[1]):
+    #     gpt_output = prompt_gpt(newest_alert_list, return_alert_type=True)
+    #     gpt_table = generate_ids(uw_alerts, gpt_output[0], gpt_output[1])
+    #     gpt_table = clean_gpt_output(gpt_output=gpt_table,
+    #                                  gmaps_client=gmaps_client)
+    #     uw_alerts = pd.concat([gpt_table, uw_alerts], ignore_index=True)
+    #     uw_alerts = clean_gpt_output(gpt_output=uw_alerts,
+    #                                  gmaps_client=gmaps_client)
+    #     # TODO: Write to postgress database
+    #     uw_alerts.to_csv(uw_alert_filepath, index=False)
+    #     return gpt_table
     return None
 
-if __name__ == "__main__":
+def main():
+    """
+    Running this method will scrape the all pages of
+    the uw alerts blog, prompt gpt, clean the output,
+    and store it
+    """
     load_dotenv('../.env')
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
     GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
-    FILEPATH = '../data/UW_Alerts_2018_2022.txt'
+    FILEPATH = '../data/uw_alerts_historical.txt'
     OUT_FILEPATH = '../data/uw_alerts_gpt.csv'
     CLEAN_FILEPATH = '../data/uw_alerts_clean.csv'
     FILE_START = 0
     openai.api_key = OPENAI_API_KEY
     gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
+    # Scrape all alerts from emergency.uw.edu and store into 
+    # ../data/uw_alerts_historical.txt
+    # get_all_alerts_historical()
+    # attempts = 4
+    # while attempts != 0:
+    #     output = parse_txt_data(FILEPATH, OUT_FILEPATH, FILE_START)
+    #     # If parsing fails, the line number is returned
+    #     if output:
+    #         attempts -= 1
+    #         FILE_START = output
+    #         output = None            
+    # clean_gpt_df = clean_gpt_output(gpt_output=OUT_FILEPATH, gmaps_client=gmaps)
+    # clean_gpt_df.to_csv(CLEAN_FILEPATH)
+    
+    # Testing scrape function
+    scrape_uw_alerts()
+
+if __name__ == "__main__":
+    main()
+
+    
+    
+    
