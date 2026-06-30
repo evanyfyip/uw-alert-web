@@ -128,9 +128,12 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Ignore .flask.pid file
+.flask.pid
 
 # vscode
 .vscode
 
 .DS_Store
+.worktrees/
 
