@@ -1,52 +1,258 @@
-# uw-alert-web
+# UW Alerts Dashboard
+
 [![Coverage Status](https://coveralls.io/repos/github/evanyfyip/uw-alert-web/badge.svg?branch=main)](https://coveralls.io/github/evanyfyip/uw-alert-web?branch=main)
-## Group Members:
-- James Joko
-- John Michael
-- Mark Qiao
-- Evan Yip
 
-## Project Type: Tool
+A public civic tool that surfaces University of Washington campus safety alerts on an interactive map, with historical analytics and external data overlays.
 
-## Questions of Interest
-- What area around UW campus is most commonly listed in alerts?
-- What time of day do alerts occur more often?
-- What is the most common type of incident?
-- Have any trends arisen across time in the UW alert system?
+---
 
-## Goals for the Project
-- Create a web application and visualization of the UW campus and surrounding area.
-- Parse real-time information from the UW alerts system and display the alert's origin.
-- Inform the user of alert trends over time and location
+## Current State
 
-## Demo video
-[Link to video](https://youtu.be/g1svuXIc0X8)
+The `main` branch reflects a working v1 implementation:
 
-## Data Sources
-- Seattle GeoData
-  - GIS database for Seattle streets that allows for map visualizations
-  - Link: https://data-seattlecitygis.opendata.arcgis.com/datasets/SeattleCityGIS::seattle-streets-3/explore?location=47.609360%2C-122.325916%2C14.88
-- UW Alerts Blog
-  - Official blogpost maintained by the University of Washington dedicated to reporting incidents may affect students
-  - Link: https://emergency.uw.edu/?_gl=1*ztz313*_ga*MzIwNzY5MTg2LjE2NjU4NzU5NjU.*_ga_3T65WK0BM8*MTY3NjMyNTM5Ny4yMS4wLjE2NzYzMjU0MDEuMC4wLjA.
+- **Scraper** (`scraper/`) — Claude-powered agentic scraper polling `emergency.uw.edu` every 15 min, writing normalized incident data to PostgreSQL. Production-ready and stable.
+- **Flask app** (`uw-alert-web/`) — Folium map visualization, reading from PostgreSQL. Functional but being replaced.
+- **Migration complete** — legacy CSV data (98 incidents, 265 alerts) migrated to PostgreSQL.
 
-The following instructions are to be performed in a command line interface from the root directory of the project: 
-- "git clone" the repository to download the latest version of the application
-- conda env create --name uw_alerts_env
-- conda activate uw_alerts_env
-- pip install -e .
-- cd uw-alert-web
-- flask --app=uw-alert-web run
-- We found that on Windows systems, the above command sometimes does not work. Instead, run "python -m flask --app=uw-alert-web run"
+The Flask + Folium frontend is being retired in favor of a Next.js + MapLibre GL + FastAPI stack. The scraper service is stable and will not change significantly.
 
-Our app also requires a .env file in the root directory containing API keys to the services we use. It should look like the following:\
-OPENAI_API_KEY='[INSERT YOUR KEY HERE]'\
-GOOGLE_MAPS_API_KEY='[INSERT YOUR KEY HERE]'\
-MAPBOX_API_KEY='[INSERT YOUR KEY HERE]'
+---
 
-API Keys can be obtained from the following:\
-[OpenAI](https://platform.openai.com)\
-[Google Maps](https://developers.google.com/maps/documentation/javascript/get-api-key)\
-[Mapbox](https://docs.mapbox.com/help/getting-started/access-tokens/)
+## Target Architecture
 
-The app will now be running on the URL: http://127.0.0.1:5000
+```
+emergency.uw.edu
+      │
+      ▼
+scraper/ (Claude tool-use — Kubernetes CronJob, every 15 min)
+      │
+      ▼
+PostgreSQL
+      │
+      ▼
+FastAPI
+      │
+      ├──────────────────────────────────────────────────────┐
+      ▼                                                      ▼
+Live Alert View (Next.js + MapLibre GL)        Analytics Dashboard (Next.js + Recharts)
+  Active incidents on map                        Filterable historical map
+  Tooltips: type, time, address                  Linked charts (time-series, category)
+  15-min polling + last-updated timestamp        External data overlays (Census, Seattle Open Data)
+```
+
+
+## Project Structure
+
+```
+scraper/
+  scraper_agent.py                  # Entry point — Claude tool-use loop
+  batch_history.py                  # Parallel bulk importer (50 workers)
+  system_prompt.py                  # Agent system prompt
+  config.py                         # Env var validation
+  tools/
+    scrape.py                       # Fetch emergency.uw.edu
+    database.py                     # query_recent_incidents, upsert_alert
+    geocode.py                      # Google Maps geocoding
+  db/
+    schema.sql                      # PostgreSQL DDL
+    migrate.py                      # CSV → PostgreSQL migration (one-time)
+
+uw-alert-web/                       # v1 Flask app (being retired)
+  uw-alert-web.py                   # Flask routes
+  parse_uw_alerts/                  # Legacy scraper + GPT parser
+  visualization_manager/            # Folium map generation
+
+data/
+  uw_alerts_clean.csv               # Legacy data (read-only after migration)
+  SeattleGISData/                   # U-District street network GeoJSON
+
+docs/                               # Project planning and specs
+
+.github/workflows/
+  build_test.yml                    # CI: Flask tests + scraper tests (with Postgres)
+```
+
+---
+
+## Local Development
+
+### Prerequisites
+
+- Python 3.10–3.11
+- [uv](https://docs.astral.sh/uv/) package manager
+- Docker (for local PostgreSQL)
+- API keys: `ANTHROPIC_API_KEY`, `GOOGLE_MAPS_API_KEY`
+
+> New to GitHub or SSH? See [docs/github-setup.md](docs/github-setup.md) for a step-by-step guide covering GitHub CLI, SSH key generation, and cloning the repo.
+
+> **Windows users:** The `make` commands below require WSL or GNU Make. Use the `uv run` equivalents listed in each section instead — they work natively on Windows.
+
+### Scraper
+
+**Mac/Linux:**
+```bash
+make db-up          # start Postgres in Docker
+make schema         # create tables and indexes
+make dry-run        # run agent without writing to DB
+make run            # run agent for real
+make batch-history  # import full historical archive
+make audit          # data quality report
+make db-shell       # inspect the database
+```
+
+**Windows (uv run equivalents):**
+```powershell
+# Start Postgres in Docker
+docker run -d --name uw-alerts-pg -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=uw_alerts_dev -p 5432:5432 postgres:15
+
+# Apply schema
+docker exec -i uw-alerts-pg psql -U postgres uw_alerts_dev < scraper/db/schema.sql
+
+# Run agent (dry run — no DB writes)
+$env:DATABASE_URL="postgres://postgres:postgres@localhost:5432/uw_alerts_dev"; $env:DRY_RUN="true"; uv run python -m scraper.scraper_agent
+
+# Run agent for real
+$env:DATABASE_URL="postgres://postgres:postgres@localhost:5432/uw_alerts_dev"; uv run python -m scraper.scraper_agent
+
+# Import full historical archive
+$env:DATABASE_URL="postgres://postgres:postgres@localhost:5432/uw_alerts_dev"; uv run python -m scraper.batch_history
+
+# Data quality report
+$env:DATABASE_URL="postgres://postgres:postgres@localhost:5432/uw_alerts_dev"; uv run python -m scraper.audit
+
+# Inspect the database
+docker exec -it uw-alerts-pg psql -U postgres uw_alerts_dev
+```
+
+### Flask app (v1 — being retired)
+
+**Mac/Linux:**
+```bash
+uv sync
+make serve        # foreground — http://127.0.0.1:5000
+make serve-up     # background
+make serve-down   # stop background server
+```
+
+**Windows:**
+```powershell
+uv sync
+cd uw-alert-web
+uv run flask --app=uw-alert-web run
+# → http://127.0.0.1:5000
+```
+
+### Environment Variables
+
+Copy `.env.example` (or create `.env`) in the repo root:
+
+| Variable | Description |
+|---|---|
+| `ANTHROPIC_API_KEY` | Claude API key |
+| `GOOGLE_MAPS_API_KEY` | Geocoding |
+| `DATABASE_URL` | `postgres://user:pass@host:5432/dbname` |
+| `DRY_RUN` | Set to `true` to skip DB writes |
+
+`python-dotenv` loads `.env` automatically when running via `uv run`. On Windows, you can also set variables in PowerShell with `$env:VAR="value"` before each command (as shown above), or use a tool like [direnv](https://direnv.net/).
+
+### Testing
+
+**Mac/Linux:**
+```bash
+uv run poe test           # Flask app tests
+make test-scraper         # Scraper unit tests (no DB required)
+make test-scraper-full    # All scraper tests (requires make schema)
+uv run poe lint           # Lint
+```
+
+**Windows:**
+```powershell
+uv run poe test                                                                    # Flask app tests
+uv run pytest scraper/tests/ --ignore=scraper/tests/test_schema.py --ignore=scraper/tests/test_migrate.py -v  # Scraper unit tests
+uv run poe lint                                                                    # Lint
+```
+
+---
+
+## Git Workflow
+
+### Branches
+
+Branch names follow the `<type>/<short-description>` pattern:
+
+```
+feat/live-alerts-endpoint
+fix/tooltip-overflow
+chore/update-dependencies
+docs/add-api-spec
+refactor/scraper-retry-logic
+test/geocode-edge-cases
+ci/add-scraper-job
+```
+
+`main` is always deployable. Work happens on feature branches and merges via PR.
+
+### Conventional Commits
+
+All commits follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>(<optional scope>): <short description>
+
+[optional body]
+```
+
+| Type | When to use |
+|---|---|
+| `feat` | New feature or capability |
+| `fix` | Bug fix |
+| `chore` | Maintenance, dependencies, tooling |
+| `docs` | Documentation only |
+| `refactor` | Code change with no behavior change |
+| `test` | Adding or updating tests |
+| `perf` | Performance improvement |
+| `ci` | CI/CD pipeline changes |
+
+**Examples:**
+
+```
+feat(scraper): add 429 retry with exponential backoff
+fix(map): tooltip overflow on mobile viewports
+chore(deps): bump anthropic sdk to 0.40.0
+docs: add git workflow to README
+test(geocode): add null address edge case
+refactor(database): extract upsert logic into helper
+```
+
+### Worktrees
+
+Use git worktrees to work on multiple branches simultaneously without stashing or context switching:
+
+```bash
+# Create a worktree for a new feature (branch must already exist)
+git worktree add .worktrees/feat-my-feature feat/my-feature
+
+# Create the branch and worktree together
+git worktree add .worktrees/feat-my-feature -b feat/my-feature
+
+# List active worktrees
+git worktree list
+
+# Remove a worktree when done (after merging)
+git worktree remove .worktrees/feat-my-feature
+```
+
+Worktrees live in `.worktrees/` (gitignored). Each is a full working directory on its own branch.
+
+**Convention:** worktree directory name matches the branch name with `/` replaced by `-`:
+```
+branch:   feat/live-alerts-endpoint
+worktree: .worktrees/feat-live-alerts-endpoint
+```
+
+---
+
+## API Keys
+
+- [Anthropic (Claude)](https://console.anthropic.com/)
+- [Google Maps](https://developers.google.com/maps/documentation/javascript/get-api-key)
